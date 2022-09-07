@@ -31,6 +31,12 @@ def lin_line(x, A, B):
 
 
 def main(image_dir,image_path,out_dir,clue_dir):
+    
+    if('Training' in image_dir):
+        training=True
+    else:
+        training=False
+    
     tz=time.time()
     
     us_states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Washington DC', 'District of Columbia', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming']
@@ -64,53 +70,63 @@ def main(image_dir,image_path,out_dir,clue_dir):
         #Get clue
         clue_file = os.path.join(clue_dir,image_path.split('.tif')[0]+'_clue.csv')
 
-
-
-        # cannot find one for training, but we can make one for now
-        try:
-            df = pd.read_csv(clue_file)
-            clue_x = df['NAD83_x'].values
-            clue_y = df['NAD83_y'].values
-            #clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
-            #clue_x = clues[0]
-            #clue_y = clues[1]
-        except Exception as e: 
-            print(f"Exception {e} raised for file ",clue_file)
-            return
+        if(training==False):
+            # cannot find one for training, but we can make one for now
+            try:
+                df = pd.read_csv(clue_file)
+                clue_x = df['NAD83_x'].values
+                clue_y = df['NAD83_y'].values
+                #clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
+                #clue_x = clues[0]
+                #clue_y = clues[1]
+            except Exception as e: 
+                print(f"Exception {e} raised for file ",clue_file)
+                return
+        elif(training==False):
+            # cannot find one for training, but we can make one for now
+            try:
+                clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
+                clue_x = clues[0]
+                clue_y = clues[1]
+            except Exception as e: 
+                print(f"Exception {e} raised for file ",clue_file)
+                return
         
         real_res = os.path.join(image_dir,image_path.split('.tif')[0]+'.csv')
         df = pd.read_csv(real_res)
         row_test = df['row'].values
         col_test = df['col'].values
-        #row_lat = df['NAD83_y'].values
-        #col_lon = df['NAD83_x'].values
+        if(training==True):
+            row_lat = df['NAD83_y'].values
+            col_lon = df['NAD83_x'].values
         npts = len(row_test)
         
         calc_lon = np.zeros(npts)
         calc_lat = np.zeros(npts)
         for i in range(npts):
-            #meas_lon = col_lon[i]
             calc_lon[i] = clue_x
-            #meas_lat = row_lat[i]
             calc_lat[i] = clue_y
-            #diff_lat = meas_lat - calc_lat[i]
-
-        #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-        #              fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
-                      fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
+            if(training==True):
+                meas_lat = row_lat[i]
+                meas_lon = col_lon[i]
+                diff_lat = meas_lat - calc_lat[i]
+        if(training==True):
+            np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                      fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+        else:
+            np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
+                      fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
         
     else:
         
-        #try:
-        test_routine=True
-        while test_routine == True:
+        try:
+            #test_routine=True
+            #while test_routine == True:
 
             #----------------------------------#
             # load the mask of the map
-            #print('jere1')
 
-            nres=350
+            nres=750
 
             nalf = int(nres*0.5)
 
@@ -319,18 +335,26 @@ def main(image_dir,image_path,out_dir,clue_dir):
             #Get clue
             clue_file = os.path.join(clue_dir,image_path.split('.tif')[0]+'_clue.csv')
 
-
-            # cannot find one for training, but we can make one for now
-            try:
-                df = pd.read_csv(clue_file)
-                clue_x = df['NAD83_x'].values
-                clue_y = df['NAD83_y'].values
-                #clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
-                #clue_x = clues[0]
-                #clue_y = clues[1]
-            except Exception as e: 
-                print(f"Exception {e} raised for file ",clue_file)
-                exit()
+            if(training==False):
+                # cannot find one for training, but we can make one for now
+                try:
+                    df = pd.read_csv(clue_file)
+                    clue_x = df['NAD83_x'].values
+                    clue_y = df['NAD83_y'].values
+                    #clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
+                    #clue_x = clues[0]
+                    #clue_y = clues[1]
+                except Exception as e: 
+                    print(f"Exception {e} raised for file ",clue_file)
+                    exit()
+            else:
+                try:
+                    clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
+                    clue_x = clues[0]
+                    clue_y = clues[1]
+                except Exception as e: 
+                    print(f"Exception {e} raised for file ",clue_file)
+                    exit()
 
             #----------------------------------#
 
@@ -949,7 +973,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                 delta_pix = bot_point[1] - top_point[1]
                                 #print(top_lat,bot_lat,delta_lat,top_point,bot_point,delta_pix,dist_top,dist_bot)
                                 meter_per_pix = 1e5*delta_lat/delta_pix
-                                if(delta_pix > 0 and delta_lat > 0 and done==False):
+                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.01)) and (clue_y >= (bot_lat-0.01))):
                                     x = np.array([top_point[1],bot_point[1]],dtype=np.float64)
                                     y = np.array([top_lat,bot_lat],dtype=np.float64)
                                     #print(x,y)
@@ -996,7 +1020,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                 print(dup_lat_final[arr[2]][stored_index_top[arr[2]][arr[3]]])
                 print(dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]])
                 """
-                if(total<1000):
+                if(min_dist_sum<1000):
                     lat3d = np.zeros((3,2))
                     lat3d[0,0] = dup_lat_final_cen[arr[2]][stored_index_top[arr[2]][arr[3]]][1] 
                     lat3d[1,0] =dup_lat_final_cen[arr[2]][stored_index_top[arr[2]][arr[3]]][0] 
@@ -1005,15 +1029,21 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     lat3d[0,1] = dup_lat_final_cen[arr[0]][stored_index_bot[arr[0]][arr[1]]][1]
                     lat3d[1,1] = dup_lat_final_cen[arr[0]][stored_index_bot[arr[0]][arr[1]]][0]
                     lat3d[2,1] = dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]]
-                elif(total>1000 and len(lat)>0 ):
+                elif(min_dist_sum>1000  ):
                     # no good pair
                     # need to sort the lats by didstance to pick best match to a corner
                     lat3d = np.zeros((3,1))
                     lat3d[0,0] = dup_lat_final_cen[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]][1] 
                     lat3d[1,0] =dup_lat_final_cen[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]][0] 
                     lat3d[2,0] = dup_lat_final[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]]
-                elif(len(dist_y_bot)<2 and len(lat)==0):
-                    lat3d = np.zeros((3,1))
+
+            elif(len(dist_y_bot)==1):
+                #here, we only have one set of lats, all possibly duplicated
+                # we need to pick the one that is closest to a corner
+                print("NEED TO ADD HERE - LINE 1020")
+                exit()
+            else:
+                lat3d = np.zeros((3,1))
 
             print('lat 3',lat3d)
             #"""    
@@ -1064,7 +1094,6 @@ def main(image_dir,image_path,out_dir,clue_dir):
             min_dist_ll = 1e6
             
             min_c_dist = 1e6
-            totel=1e6
             min_c_dist_arr = []
 
 
@@ -1097,7 +1126,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                 delta_pix = right_point[0] - left_point[0]
                                 #print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix)
                                 meter_per_pix = 1e5*delta_lon/delta_pix
-                                if(delta_pix > 0 and delta_lon > 0 and done==False):
+                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.01)) and (clue_x >= (left_lon-0.01))):
                                     x = np.array([left_point[0],right_point[0]],dtype=int)
                                     y = np.array([left_lon,right_lon],dtype=np.float64)
                                     #print(x,y)
@@ -1141,7 +1170,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                 print(dup_lon_final[arr[2]][stored_index_left[arr[2]][arr[3]]])
                 print(dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]])
                 """
-                if(total<1000):
+                if(min_dist_sum<1000):
                     lon3d = np.zeros((3,2))
                     lon3d[0,0] = dup_lon_final_cen[arr[2]][stored_index_left[arr[2]][arr[3]]][1] 
                     lon3d[1,0] =dup_lon_final_cen[arr[2]][stored_index_left[arr[2]][arr[3]]][0] 
@@ -1151,13 +1180,20 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     lon3d[1,1] = dup_lon_final_cen[arr[0]][stored_index_right[arr[0]][arr[1]]][0]
                     lon3d[2,1] = dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]]  
 
-                elif(toal>1000 and len(lon)>0):
+                elif(min_dist_sum>1000 ):
                     lon3d = np.zeros((3,1))
                     lon3d[0,0] = dup_lon_final_cen[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]][1] 
                     lon3d[1,0] =dup_lon_final_cen[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]][0] 
                     lon3d[2,0] = dup_lon_final[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]]
-                elif(len(dist_x_right)<2 and len(lon)==0):
-                    lon3d=np.zeros((3,1))
+
+                    
+            elif(len(dist_x_right)==1):
+                #here, we only have one set of lats, all possibly duplicated
+                # we need to pick the one that is closest to a corner
+                print("NEED TO ADD HERE - LINE 1170")
+                exit()
+            else:
+                lon3d=np.zeros((3,1))
 
             print('lon 3',lon3d)
 
@@ -1181,7 +1217,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     lon_max = Y[-1]
                     lon_min = Y[0]
                     print('lon max/min own = ',lon_max,lon_min)
-                    if(lon_max - lon_min > 2):
+                    if(lon_max - lon_min > 3):
                         fitx_own=False
 
 
@@ -1195,7 +1231,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     lat_min = Y[-1]
                     lat_max = Y[0]
                     print('lat max/min own = ',lat_max,lat_min)
-                    if(lat_max - lat_min > 2):
+                    if(lat_max - lat_min > 3):
                         fity_own=False
 
             # failed to fitx but fitted y, so copy y
@@ -1219,7 +1255,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                 lon_max = Y[-1]
                 lon_min = Y[0]
                 print('lon max/min help = ',lon_max,lon_min)
-                if(lon_max - lon_min > 2):
+                if(lon_max - lon_min > 3):
                     fitx_help=False
                     fitx_global=True
                     
@@ -1236,7 +1272,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     lon_max = Y[-1]
                     lon_min = Y[0]
                     print('lon max/min help = ',lon_max,lon_min)
-                    if(lon_max - lon_min > 2):
+                    if(lon_max - lon_min > 3):
                         fitx_help=False
                         fitx_global=True
 
@@ -1291,8 +1327,9 @@ def main(image_dir,image_path,out_dir,clue_dir):
             df = pd.read_csv(real_res)
             row_test = df['row'].values
             col_test = df['col'].values
-            #row_lat = df['NAD83_y'].values
-            #col_lon = df['NAD83_x'].values
+            if(training==True):
+                row_lat = df['NAD83_y'].values
+                col_lon = df['NAD83_x'].values
             npts = len(row_test)
 
             if(fitx_own == True or fitx_help==True):
@@ -1301,22 +1338,24 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     calc_lon = np.zeros(npts)
                     calc_lat = np.zeros(npts)
                     for i in range(npts):
-                        #meas_lon = col_lon[i]
                         calc_lon[i] = lin_line(col_test[i],*poptx)
-                        #meas_lat = row_lat[i]
                         calc_lat[i] = lin_line(row_test[i],*popty)
-                        #diff_lat = meas_lat - calc_lat[i]
-                        #diff_lon = meas_lon - calc_lon[i]
+                        if(training==True):
+                            meas_lon = col_lon[i]
+                            meas_lat = row_lat[i]
+                            diff_lat = meas_lat - calc_lat[i]
+                            diff_lon = meas_lon - calc_lon[i]
 
                         if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
                             calc_lat[i] = clue_y
                         if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
                             calc_lon[i] = clue_x
 
-
-                    #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-                    #          fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-                    np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
+                    if(training==True):
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                              fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+                    else:
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                               fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
 
                 else:
@@ -1324,20 +1363,24 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     calc_lon = np.zeros(npts)
                     calc_lat = np.zeros(npts)
                     for i in range(npts):
-                        #meas_lon = col_lon[i]
+                        #
                         calc_lon[i] = lin_line(col_test[i],*poptx)
-                        #meas_lat = row_lat[i]
                         calc_lat[i] = clue_y
-                        #diff_lat = meas_lat - calc_lat[i]
+                        if(training==True):
+                            meas_lon = col_lon[i]
+                            meas_lat = row_lat[i]
+                            diff_lat = meas_lat - calc_lat[i]
+                            
 
                         if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
                             calc_lat[i] = clue_y
                         if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
                             calc_lon[i] = clue_x
-
-                    #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-                    #          fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-                    np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
+                    if(training==True):
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                              fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+                    else:
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                           fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
 
             elif(fitx_own == False and fitx_help==False):
@@ -1346,20 +1389,22 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     calc_lon = np.zeros(npts)
                     calc_lat = np.zeros(npts)
                     for i in range(npts):
-                        #meas_lon = col_lon[i]
                         calc_lon[i] = clue_x
-                        #meas_lat = row_lat[i]
                         calc_lat[i] = lin_line(row_test[i],*popty)
-                        #diff_lat = meas_lat - calc_lat[i]
+                        if(training==True):
+                            meas_lon = col_lon[i]
+                            meas_lat = row_lat[i]
+                            diff_lat = meas_lat - calc_lat[i]
 
                         if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
                             calc_lat[i] = clue_y
                         if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
                             calc_lon[i] = clue_x
-
-                    #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-                    #          fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-                    np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
+                    if(training==True):
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                              fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+                    else:
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                           fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
 
                 else:
@@ -1367,32 +1412,36 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     calc_lon = np.zeros(npts)
                     calc_lat = np.zeros(npts)
                     for i in range(npts):
-                        #meas_lon = col_lon[i]
                         calc_lon[i] = clue_x
-                        #meas_lat = row_lat[i]
                         calc_lat[i] = clue_y
-                        #diff_lat = meas_lat - calc_lat[i]
-
-                    #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-                    #          fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-                    np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
+                        if(training==True):
+                            meas_lon = col_lon[i]
+                            meas_lat = row_lat[i]
+                            diff_lat = meas_lat - calc_lat[i]
+                    if(training==True):
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                              fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+                    else:
+                        np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                           fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
             test_routine = False
-            """
-            #except Exception as e:
+            #"""
+        except Exception as e:
             print(f"Exception {e}: File = ",image_path)
-                #Get clue
+            #Get clue
             clue_file = os.path.join(clue_dir,image_path.split('.tif')[0]+'_clue.csv')
 
 
             # cannot find one for training, but we can make one for now
             try:
-                df = pd.read_csv(clue_file)
-                clue_x = df['NAD83_x'].values
-                clue_y = df['NAD83_y'].values
-                #clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
-                #clue_x = clues[0]
-                #clue_y = clues[1]
+                if(training==False):
+                    df = pd.read_csv(clue_file)
+                    clue_x = df['NAD83_x'].values
+                    clue_y = df['NAD83_y'].values
+                else:
+                    clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
+                    clue_x = clues[0]
+                    clue_y = clues[1]
             except Exception as e: 
                 print(f"Exception {e} raised for file ",clue_file)
                 return
@@ -1401,24 +1450,27 @@ def main(image_dir,image_path,out_dir,clue_dir):
             df = pd.read_csv(real_res)
             row_test = df['row'].values
             col_test = df['col'].values
-            #row_lat = df['NAD83_y'].values
-            #col_lon = df['NAD83_x'].values
+            if(training==True):
+                row_lat = df['NAD83_y'].values
+                col_lon = df['NAD83_x'].values
             npts = len(row_test)
 
             calc_lon = np.zeros(npts)
             calc_lat = np.zeros(npts)
-            for i in range(npts):
-                #meas_lon = col_lon[i]
+            for i in range(npts):        
                 calc_lon[i] = clue_x
-                #meas_lat = row_lat[i]
                 calc_lat[i] = clue_y
-                #diff_lat = meas_lat - calc_lat[i]
-
-            #np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_lon,row_lat,calc_lon,calc_lat]).T,\
-            #              fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-            np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([col_test,row_test,calc_lon,calc_lat]).T,\
+                if(training==True):
+                    meas_lon = col_lon[i]
+                    meas_lat = row_lat[i]
+                    diff_lat = meas_lat - calc_lat[i]
+            if(training==True):
+                np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
+                          fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+            else:
+                np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                       fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-            """
+            #"""
     print('Time = ',time.time()-tz)
     return
 

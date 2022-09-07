@@ -16,6 +16,16 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                     if(x=='0'):
                         count+=1
                         pos.append(itert)
+                if count==0 and len(word)==5:
+                    if(np.float64(word[3:])/60):
+                            final_numbers.append(np.float64(word[0:3])+np.float64(word[3:])/60)
+                            final_num_centers.append(tot_num_centers[j])
+                            final_num_boxes.append(tot_num_boxes[j])
+                    if(np.float64(word[2:4])/60):
+                            final_numbers.append(np.float64(word[0:2])+np.float64(word[2:4])/60)
+                            final_num_centers.append(tot_num_centers[j])
+                            final_num_boxes.append(tot_num_boxes[j])
+                        
                 if count==1 and len(word)==5:
                     x=word
                     done=False
@@ -55,17 +65,23 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
 
                             else:
                                 if(len(y[1]) ==1):
-                                    final_numbers.append(np.float64(y[0])+np.float64(y[1])/10)
+                                    final_numbers.append(np.float64(y[0])+np.float64(y[1])/60)
                                     final_num_centers.append(tot_num_centers[j])
                                     final_num_boxes.append(tot_num_boxes[j])
                                 elif(len(y[1]) ==2):
-                                    final_numbers.append(np.float64(y[0])+np.float64(y[1])/100)
+                                    final_numbers.append(np.float64(y[0])+np.float64(y[1])/60)
                                     final_num_centers.append(tot_num_centers[j])
                                     final_num_boxes.append(tot_num_boxes[j])
                                 elif(len(y[1]) ==3):
-                                    final_numbers.append(np.float64(y[0])+np.float64(y[1])/1000)
-                                    final_num_centers.append(tot_num_centers[j])
-                                    final_num_boxes.append(tot_num_boxes[j])
+                                    if(i==1):   
+                                        if(np.float64(y[1][0:2])<60):
+                                            final_numbers.append(np.float64(y[0]+'0')+np.float64(y[1][0:2])/60+np.float64(y[1][2])/3600)
+                                            final_num_centers.append(tot_num_centers[j])
+                                            final_num_boxes.append(tot_num_boxes[j])
+                                        if(np.float64(y[1][1:3])<60):
+                                            final_numbers.append(np.float64(y[0]+'0'+y[1][0])+np.float64(y[1][1:])/60)
+                                            final_num_centers.append(tot_num_centers[j])
+                                            final_num_boxes.append(tot_num_boxes[j])
                                 elif(len(y[1]) ==0):
                                     final_numbers.append(np.float64(y[0]))
                                     final_num_centers.append(tot_num_centers[j])
@@ -444,6 +460,7 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                     done=False
                     y = x.split('0')
                     # last remaining digits == 0
+                
                     if(len(y[1]) ==1 and len(y[0])==3):
                         if(pos[0]==3):
                             final_numbers.append(np.float64(y[0])+np.float64(y[1]+'0')/60)
@@ -462,6 +479,17 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                             final_numbers.append(np.float64(y[0]))
                             final_num_centers.append(tot_num_centers[j])
                             final_num_boxes.append(tot_num_boxes[j])
+                    elif(len(y[1]) ==4 and len(y[0])==3):
+                        if(pos[0]==3):
+                            if(np.float64(y[1][0:2])<60):
+                                final_numbers.append(np.float64(y[0])+np.float64(y[1][0:2])/60+np.float64(y[1][2:])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                            else:
+                                final_numbers.append(np.float64(y[0])+np.float64(y[1][0])/60+np.float64(y[1][1:])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+
                 elif count==3 and len(word)==9:
                     x=word
                     done=False
@@ -565,6 +593,7 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                     x=word
                     done=False
                     y = x.split('0')
+                    print(word,y,pos,len(y))
                     if(len(y)==3):
                         if(len(y[0])==2 and len(y[1])==3):
                             if(word[2]=='0' and word[-1]=='0'):
@@ -575,12 +604,22 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                                 else:
                                     final_numbers.append(np.float64(y[0])+np.float64('0'+y[1][0])/60+np.float64(y[1][1:])/3600)
                                     final_num_centers.append(tot_num_centers[j])
-                                    final_num_boxes.append(tot_num_boxes[j])                                    
+                                    final_num_boxes.append(tot_num_boxes[j])  
+                        if(len(y[0])==5 and len(y[1])==0):
+                            if(word[5]=='0'):
+                                if(np.float64(y[0][2:4])<60):
+                                    final_numbers.append(np.float64(y[0][0:2])+np.float64(y[0][2:4])/60+np.float64(y[0][4:5]+'0')/3600)
+                                    final_num_centers.append(tot_num_centers[j])
+                                    final_num_boxes.append(tot_num_boxes[j])
+                                else:
+                                    final_numbers.append(np.float64(y[0])+np.float64('0'+y[1][0])/60+np.float64(y[1][1:])/3600)
+                                    final_num_centers.append(tot_num_centers[j])
+                                    final_num_boxes.append(tot_num_boxes[j])  
                 elif count==3 and len(word)==7:
                     x=word
                     done=False
                     y = x.split('0')
-                    print(word,y,pos,len(y))
+                    
                     if(pos[0]==1 and pos[1]==4 and pos[1]==5):
                         final_numbers.append(np.float64(word[0:2])+np.float64(word[2:4])/60+np.float64(word[4:6])/3600)
                         final_num_centers.append(tot_num_centers[j])
@@ -621,20 +660,37 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                 elif count==1 and len(word)==6:
                     x=word
                     done=False
-                    for i in range(len(x)):
-                            # remove first '0' for 5 char nums with two zeros found
-                            y = x.split('0')
-                            
-                            if (len(y)==2):
-                                if(len(y[0])==5):
-                                    if(np.float64(word[2:4])<60):
-                                        final_numbers.append(np.float64(word[0:2])+np.float64(word[2:4])/60+np.float64(word[4:])/3600)
-                                        final_num_centers.append(tot_num_centers[j])
-                                        final_num_boxes.append(tot_num_boxes[j])
-                                    else:
-                                        final_numbers.append(np.float64(word[0:2])+np.float64(word[2:3])/60+np.float64(word[4:6])/3600)
-                                        final_num_centers.append(tot_num_centers[j])
-                                        final_num_boxes.append(tot_num_boxes[j])
+                    # remove first '0' for 5 char nums with two zeros found
+                    y = x.split('0')
+                    
+                    if (len(y)==2):
+                        if(len(y[0])==5):
+                            if(np.float64(word[2:4])<60):
+                                final_numbers.append(np.float64(word[0:2])+np.float64(word[2:4])/60+np.float64(word[4:])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                            else:
+                                final_numbers.append(np.float64(word[0:2])+np.float64(word[2:3])/60+np.float64(word[4:6])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                        elif(len(y[0])==3 and len(y[1])==2):
+                            if(np.float64(y[1])<60):
+                                final_numbers.append(np.float64(y[0])+np.float64(y[1])/60)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                            else:
+                                final_numbers.append(np.float64(word[0:2])+np.float64(word[2:3])/60+np.float64(word[4:6])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                        elif(len(y[0])==2 and len(y[1])==3):
+                            if(np.float64(y[1][0:2])<60):
+                                final_numbers.append(np.float64(y[0])+np.float64(y[1][0:2])/60)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                            else:
+                                final_numbers.append(np.float64(word[0:2])+np.float64(word[2:3])/60+np.float64(word[4:6])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
                 elif count==0 and len(word)==8:
                     x=word
                     done=False
@@ -657,6 +713,7 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                     x=word
                     y = x.split('0')
                     done=False
+                    
                     if(pos[0]==2 and len(y[1])==3):
                         if(np.float64(y[1][0:2])<60):
                             if(pos[1]==6):
@@ -679,6 +736,36 @@ def main(tot_numbers,tot_num_centers,tot_num_boxes):
                                 final_numbers.append(np.float64(x[0:2])+np.float64(y[1][0:1])/60+np.float64(y[1][1:])/3600)
                                 final_num_centers.append(tot_num_centers[j])
                                 final_num_boxes.append(tot_num_boxes[j])
+                    elif(pos[0]==3 and len(y[0])==3):
+                        if(np.float64(y[1][0:2])<60):
+                            if(pos[1]==7):
+                                final_numbers.append(np.float64(x[0:3])+np.float64(y[1][0:2])/60+np.float64(y[1][2]+'0')/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                        else:
+                            if(pos[1]==7):
+                                final_numbers.append(np.float64(x[0:2])+np.float64(y[1][0:1])/60+np.float64(y[1][1:])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                    elif(pos[0]==1 and len(y[0])==3):
+                        
+                        if(np.float64(y[1][0:2])<60):
+                            if(pos[1]==7):
+                                final_numbers.append(np.float64(x[0:3])+np.float64(y[1][0:2])/60+np.float64(y[1][2]+'0')/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                        else:
+                            if(pos[1]==7):
+                                final_numbers.append(np.float64(x[0:2])+np.float64(y[1][0:1])/60+np.float64(y[1][1:])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
+                    elif(pos[0]==1 and len(y[0])==1):
+                        print(word,y,pos)
+                        if(pos[1]==6):
+                            if(np.float64(word[3:5])<60):
+                                final_numbers.append(np.float64(x[0:3])+np.float64(word[3:5])/60+np.float64(word[5:7])/3600)
+                                final_num_centers.append(tot_num_centers[j])
+                                final_num_boxes.append(tot_num_boxes[j])
             return final_numbers,final_num_centers,final_num_boxes
 
 
@@ -689,16 +776,22 @@ if __name__=="__main__":
     
     tot_numbers = ['9045','91200','42080','9045', '423780','10907', '4100',\
                   '7630', '4037001','40331451','4137301','41130','830071307','8307130',\
-                   '37022301','83071301','83007301','37022130','1070730','380750','3807300']
+                   '37022301','83071301','83007301','37022130','1070730','380750','3807300',\
+                  '36045','116022130','11602230','11615','116015','10745','10737307','370521','3752300']
     tot_num_centers = [[100,500],[200,600],[300,700],[200,600],[300,700],[200,600],[300,700],\
                       [200,600],[300,700],[300,700],[300,700],[300,700],[300,700],[300,700]\
-                       ,[300,700],[300,700],[300,700],[300,700],[300,700],[300,700],[300,700]]
+                       ,[300,700],[300,700],[300,700],[300,700],[300,700],[300,700],[300,700],\
+                      [300,700],[300,700],[300,700],[300,700],[300,700],[300,700],[300,700],[300,700]\
+                      ,[300,700]]
     tot_num_boxes = [[[100,500],[110,510]],[[200,600],[210,610]],[[300,700],[310,710]],\
                      [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
                     [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
                     [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],
                     [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
-                    [[300,700],[310,710]],[[300,700],[310,710]]]
+                    [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
+                    [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
+                    [[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],[[300,700],[310,710]],\
+                    [[300,700],[310,710]]]
     
     final_keys,final_cen,final_bboxes = main(tot_numbers,tot_num_centers,tot_num_boxes)
     print(final_keys)
