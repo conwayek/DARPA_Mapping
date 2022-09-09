@@ -82,20 +82,22 @@ def main(image_dir,out_dir,image_path,width=0):
     xsec_xg = xsec_x[:,:,1]
     xsec_xb = xsec_x[:,:,2]
 
-    ipr = np.logical_and(xsec_xr.flatten()<=meanr,xsec_xr.flatten()>10)
+    
+    
+    ipr = np.logical_and(xsec_xr.flatten()<meanr-5,xsec_xr.flatten()>10)
     x = xsec_xr.flatten()
     x[:] = 0
     xsec_xr = x
     xsec_xr[ipr] = 1
 
 
-    ipg = np.logical_and(xsec_xg.flatten()<=meang,xsec_xg.flatten()>10)
+    ipg = np.logical_and(xsec_xg.flatten()<meang-5,xsec_xg.flatten()>10)
     x = xsec_xg.flatten()
     x[:] = 0
     xsec_xg = x
     xsec_xg[ipg] = 1
 
-    ipb = np.logical_and(xsec_xb.flatten()<=meanb,xsec_xb.flatten()>10)
+    ipb = np.logical_and(xsec_xb.flatten()<meanb-5,xsec_xb.flatten()>10)
     x = xsec_xb.flatten()
     x[:] = 0
     xsec_xb = x
@@ -130,6 +132,11 @@ def main(image_dir,out_dir,image_path,width=0):
     x[x>0.9] = 1
     #x[x<0.9] = 0
     img2 = x.reshape(img.shape[0],img.shape[1])
+    
+    fig=plt.figure()
+    plt.imshow(img2,aspect='auto')
+    plt.savefig('img2.png',dpi=400)
+    plt.close()
 
     
 
@@ -454,9 +461,9 @@ def main(image_dir,out_dir,image_path,width=0):
         
     
 if __name__=="__main__":
-    image_dir = '/scratch/e.conway/DARPA_MAPS/Validation/'
-    image_path='GEO_0538.tif'
-    out_dir = '/scratch/e.conway/DARPA_MAPS/ValidationResults/'
+    image_dir = '/scratch/e.conway/DARPA_MAPS/Training/'
+    image_path='GEO_0012.tif'
+    out_dir = '/scratch/e.conway/DARPA_MAPS/Results/'
     ret_fail,mask,bounds = main(image_dir,out_dir,image_path)
     
     out = image_path.split('.tif')[0]+'_Mask.txt'
