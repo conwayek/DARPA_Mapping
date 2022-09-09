@@ -48,10 +48,10 @@ def main(image_dir,out_dir,image_path,width=0):
         s4 = np.nansum(np.isfinite(img[-width:,-width:,0])) / npix
 
         print('width,sums = ',width,s1,s2,s3,s4)
-        #if(s1>0.15 and s2>0.15 and s3>0.15 and s4>0.15):
-        if(s1>0.15 or s2>0.15 or s3>0.15 or s4>0.15):
-            if(np.isfinite(s1) and np.isfinite(s2) and np.isfinite(s3) and np.isfinite(s4)):
-                contin=True
+        if(s1>0.05 and s2>0.05 and s3>0.05 and s4>0.05):
+            if(s1>0.15 or s2>0.15 or s3>0.15 or s4>0.15):
+                if(np.isfinite(s1) and np.isfinite(s2) and np.isfinite(s3) and np.isfinite(s4)):
+                    contin=True
 
         if(width>=max(0.3*img.shape[0],0.3*img.shape[1])):
             return_fail = True
@@ -74,7 +74,7 @@ def main(image_dir,out_dir,image_path,width=0):
     meanb = min(mean1[2],mean2[2],mean3[2],mean4[2])
 
 
-    img=np.array(img,dtype=np.uint8)
+    #img=np.array(img,dtype=np.uint8)
     
 
     xsec_x = img[:,:,:]
@@ -157,6 +157,10 @@ def main(image_dir,out_dir,image_path,width=0):
     for i in range(len(idx_final_y)):
         img_mask[i,idx_final_y[i]] = 1
         #img[i,idx_final[i]] = 0
+    fig=plt.figure()
+    plt.imshow(img_mask,aspect='auto')
+    plt.savefig('post_ransacy.png',dpi=400)
+    plt.close()
         
     idx=[]
     for i in range(img_mask.shape[1]):
@@ -179,13 +183,18 @@ def main(image_dir,out_dir,image_path,width=0):
     img3 = np.zeros((img_mask.shape))
     for i in range(len(idx_final_x)):
         img3[idx_final_x[i],i] = 1
+
+    fig=plt.figure()
+    plt.imshow(img3,aspect='auto')
+    plt.savefig('post_ransacx.png',dpi=400)
+    plt.close()
         
     if(np.sum(img3)/(img3.shape[0]*img3.shape[1]) < 0.3):
         min_thresh_y = img.shape[0] * 0.1
         min_thresh_x = img.shape[1] * 0.1       
     else:
-        min_thresh_y = img.shape[0] * 0.3
-        min_thresh_x = img.shape[1] * 0.3
+        min_thresh_y = img.shape[0] * 0.1
+        min_thresh_x = img.shape[1] * 0.1
 
     idx = np.zeros(img.shape[1])
     idy = np.zeros(img.shape[0])
@@ -278,11 +287,12 @@ def main(image_dir,out_dir,image_path,width=0):
     """
     
     img_temp = img3.copy() 
-    
+    #"""
     fig=plt.figure()
     plt.imshow(img3,aspect='auto')
     plt.savefig('img3.png',dpi=400)
     plt.close()
+    #"""
 
     # Count the start/end/sum of all strips of missing pixels. 
     # remove all but the biggest set
@@ -323,21 +333,26 @@ def main(image_dir,out_dir,image_path,width=0):
             stop_x.append(img_temp.shape[1])
             sum_x_i.append(i)
 
+    if(stop_x[-1] == img_temp.shape[1]):
+        start_x.append(img_temp.shape[1])
+    if(start_x[-1] == img_temp.shape[1]):
+        stop_x.append(img_temp.shape[1])
     delta = np.array(stop_x,dtype=int) - np.array(start_x,dtype=int)
-    print('deltax',delta)
+    #print('deltax',delta)
 
     for i in range(len(delta)):
-        if(delta[i]<0.1*img_temp.shape[1]):
+        if(delta[i]<0.05*img_temp.shape[1]):
             img_temp[:,start_x[i]:stop_x[i]] = 0
             
             
     # Count the start/end/sum of all strips of missing pixels. 
     # remove all but the biggest set
+    #"""
     fig=plt.figure()
     plt.imshow(img_temp,aspect='auto')
     plt.savefig('img_tempx.png',dpi=400)
     plt.close()
-
+    #"""
     idy=[]
     for i in range(img_temp.shape[0]):
         slc = img_temp[i,:]
@@ -373,22 +388,26 @@ def main(image_dir,out_dir,image_path,width=0):
         if(i==img_temp.shape[0]-1):
             stop_y.append(img_temp.shape[0])
             sum_y_i.append(i)
-            
+    if(stop_y[-1] == img_temp.shape[0]):
+        start_y.append(img_temp.shape[0])
+    if(start_y[-1] == img_temp.shape[0]):
+        stop_y.append(img_temp.shape[0])
     print(start_y)
     print(stop_y)
     delta = np.array(stop_y,dtype=int) - np.array(start_y,dtype=int)
-    print('deltay',delta)
+    print(delta)
+    #print('deltay',delta)
     for i in range(len(delta)):
         if(delta[i]<0.05*img_temp.shape[0]):
             img_temp[start_y[i]:stop_y[i],:] = 0
 
     img3 = img_temp.copy()
-    
+    #"""
     fig=plt.figure()
     plt.imshow(img_temp,aspect='auto')
     plt.savefig('img_tempy.png',dpi=400)
     plt.close()
-       
+    #"""
     min_x = np.zeros(img.shape[0]) ; min_x[:] = np.nan
     max_x = np.zeros(img.shape[0]) ; max_x[:] = np.nan
     min_y = np.zeros(img.shape[1]) ; min_y[:] = np.nan
@@ -407,14 +426,15 @@ def main(image_dir,out_dir,image_path,width=0):
             if(len(idy)>1):
                 min_y[i] = idy[0]
                 max_y[i] = idy[-1]
-    print(min_y,max_y,min_x,max_x)
-
+    #print(min_y,max_y,min_x,max_x)
+    """
     fig=plt.figure()
     plt.plot(min_x)
     plt.savefig('min_x.png',dpi=400)
     plt.close()
+    """
     bounds = np.array([np.nanmin(min_y),np.nanmax(max_y),np.nanmin(min_x),np.nanmax(max_x)])
-    
+    print(bounds)    
     out = image_path.split('.tif')[0]+'_Mask.txt'
     np.savetxt(os.path.join(out_dir,out),bounds)
     
@@ -434,12 +454,12 @@ def main(image_dir,out_dir,image_path,width=0):
         
     
 if __name__=="__main__":
-    data_dir = '/scratch/e.conway/DARPA_MAPS/Validation/'
-    image_file='GEO_0001.tif'
-    image_path = os.path.join(data_dir,image_file)
-    mask,bounds = main(image_path)
+    image_dir = '/scratch/e.conway/DARPA_MAPS/Validation/'
+    image_path='GEO_0538.tif'
+    out_dir = '/scratch/e.conway/DARPA_MAPS/ValidationResults/'
+    ret_fail,mask,bounds = main(image_dir,out_dir,image_path)
     
-    out = image_file.split('.tif')[0]+'_Mask.txt'
+    out = image_path.split('.tif')[0]+'_Mask.txt'
     np.savetxt(out,mask)
     
     fig = plt.figure()

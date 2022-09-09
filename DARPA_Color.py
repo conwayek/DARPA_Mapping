@@ -12,7 +12,7 @@ import pandas as pd
 from geopy.geocoders import Nominatim
 import requests
 from shapely.geometry import Polygon, Point, MultiPolygon
-from lmfit import minimize, Parameters, Parameter, printfuncs, fit_report
+#from lmfit import minimize, Parameters, Parameter, printfuncs, fit_report
 from sklearn.linear_model import RANSACRegressor
 from sklearn import linear_model
 from scipy.optimize import fmin
@@ -24,7 +24,7 @@ import sys
 from sys import exit
 import time
 import rasterio
-import FinalNumbers as Fnum
+import FinalNumbers2 as Fnum
 
 def lin_line(x, A, B): 
     return A*x + B
@@ -61,7 +61,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     space=0
     failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
-    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/ValidationResults/GEO_0103_Mask.txt',delimiter=',')
+    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/ValidationResults/GEO_0538_Mask.txt',delimiter=',')
     #print(bounds)
     #failure = False
     
@@ -115,7 +115,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                       fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
         else:
             np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
-                      fmt = '%.7f,%.7f,%.7f,%.7f,%.7f,%.7f',delimiter=',')
+                      fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
         
     else:
         
@@ -587,8 +587,9 @@ def main(image_dir,image_path,out_dir,clue_dir):
             #        print(key)
             #----------------------------------#
 
-             
-            final_numbers,final_num_centers,final_num_boxes = Fnum.main(tot_numbers,tot_num_centers,tot_num_boxes)
+            cluex_array=np.zeros(len(tot_numbers)) ; cluex_array[:] = clue_x
+            cluey_array= np.zeros(len(tot_numbers)) ; cluey_array[:] = clue_y
+            final_numbers,final_num_centers,final_num_boxes = Fnum.main(tot_numbers,tot_num_centers,tot_num_boxes,cluex_array,cluey_array)
             #"""
             #print(final_numbers)
             #print(final_num_centers)
@@ -939,7 +940,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
             
             min_c_dist = 1e6
             totel=1e6
-            min_c_dist_arr = []
+            #min_c_dist_lon
 
             print(len(dist_y_bot))
 
@@ -963,29 +964,29 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                 dist_ur_top = stored_dist_y_ur[p][j]
                                 #dist_lr_top = stored_dist_y_lr[p][j]
                                 #dist_ll_top = stored_dist_y_ll[p][j]
-                                min_c = min(dist_ul_top,dist_ur_top,dist_lr_bot,dist_ll_bot)
+                                app = np.array([dist_ul_top,dist_ur_top,dist_lr_bot,dist_ll_bot])
+                                min_c = np.min(app)
+                                loc = np.where(min_c == app)[0]
                                 if(min_c<min_c_dist):
                                     min_c_dist = min_c
-                                    min_c_dist_arr = [k,i,p,j]
+                                    if(loc<=1):
+                                        min_c_dist_lat = top_lat
+                                        min_c_dist_cen = dup_lat_final_cen[p][stored_index_top[p][j]] #x,y format
+                                    else:
+                                        min_c_dist_lat = bot_lat
+                                        min_c_dist_cen = dup_lat_final_cen[k][stored_index_top[k][i]] #x,y format
                                     
                                 
                                 delta_lat = top_lat - bot_lat
                                 delta_pix = bot_point[1] - top_point[1]
                                 #print(top_lat,bot_lat,delta_lat,top_point,bot_point,delta_pix,dist_top,dist_bot)
                                 meter_per_pix = 1e5*delta_lat/delta_pix
-                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.01)) and (clue_y >= (bot_lat-0.01))):
+                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.05)) and (clue_y >= (bot_lat-0.05))):
                                     x = np.array([top_point[1],bot_point[1]],dtype=np.float64)
                                     y = np.array([top_lat,bot_lat],dtype=np.float64)
-                                    #print(x,y)
-                                    #print(top_left[1])
-                                    #print(bot_left[1])
-                                    #print('x = ',x)
-                                    #print('y = ',y)
-                                    #print(x.dtype,y.dtype)
                                     popt,pcov = curve_fit(lin_line,x,y)
                                     max_lat = lin_line(top_left[1],*popt)
                                     min_lat = lin_line(bot_left[1],*popt)
-                                    #print(max_lat,min_lat)
                                     if(max_lat - min_lat < 2):
                                         #done=True
                                         top_point_cen = dup_lat_final_cen[p][stored_index_top[p][j]]
@@ -1033,15 +1034,31 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     # no good pair
                     # need to sort the lats by didstance to pick best match to a corner
                     lat3d = np.zeros((3,1))
-                    lat3d[0,0] = dup_lat_final_cen[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]][1] 
-                    lat3d[1,0] =dup_lat_final_cen[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]][0] 
-                    lat3d[2,0] = dup_lat_final[min_c_dist_arr[2]][stored_index_top[min_c_dist_arr[2]][min_c_dist_arr[3]]]
+                    lat3d[0,0] = min_c_dist_cen[1]
+                    lat3d[1,0] = min_c_dist_cen[0]
+                    lat3d[2,0] = min_c_dist_lat
 
             elif(len(dist_y_bot)==1):
-                #here, we only have one set of lats, all possibly duplicated
+                #here, we only have one set of lons, all possibly duplicated
                 # we need to pick the one that is closest to a corner
-                print("NEED TO ADD HERE - LINE 1020")
-                exit()
+                if(len(stored_dist_y_ur[0])>1):
+                    print(stored_dist_y_ur)
+                    arr = np.array([stored_dist_y_ul[0][0],stored_dist_y_ur[0][0],stored_dist_y_lr[0][0],stored_dist_y_ll[0][0]],dtype=np.float64)
+                    arr_indx = np.array([stored_indx_y_ul[0][0],stored_indx_y_ur[0][0],stored_indx_y_lr[0][0],stored_indx_y_ll[0][0]],dtype=np.float64)
+                    #print(arr)
+                    #print(arr_indx)
+                    best_lat = np.min(arr)
+                    #print(best_lon)
+                    idx = int(np.where(arr==best_lat)[0])
+                    #print(idx)
+                    lat3d=np.zeros((3,1))
+                    lat3d[2,0] = dup_lat_final[0][idx]
+                    lat3d[1,0] = dup_lat_final_cen[0][idx][0]
+                    lat3d[0,0] = dup_lat_final_cen[0][idx][1]
+                else:
+                    lat3d[2,0] = dup_lat_final[0][0]
+                    lat3d[1,0] = dup_lat_final_cen[0][0][0]
+                    lat3d[0,0] = dup_lat_final_cen[0][0][1]                  
             else:
                 lat3d = np.zeros((3,1))
 
@@ -1118,24 +1135,27 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                 #dist_ur_left = stored_dist_x_ur[p][j]
                                 #dist_lr_left = stored_dist_x_lr[p][j]
                                 dist_ll_left = stored_dist_x_ll[p][j]
-                                min_c = min(dist_ul_left,dist_ur_right,dist_lr_right,dist_ll_left)
+                                app = np.array([dist_ul_left,dist_ll_left,dist_ur_right,dist_lr_right])
+                                min_c = np.min(app)
+                                loc = np.where(min_c == app)[0]
                                 if(min_c<min_c_dist):
                                     min_c_dist = min_c
-                                    min_c_dist_arr = [k,i,p,j]
+                                    if(loc<=1):
+                                        min_c_dist_lon = left_lon
+                                        min_c_dist_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
+                                    else:
+                                        min_c_dist_lon = right_lon
+                                        min_c_dist_cen = dup_lon_final_cen[k][stored_index_right[k][i]]
                                 delta_lon = right_lon - left_lon
                                 delta_pix = right_point[0] - left_point[0]
                                 #print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix)
                                 meter_per_pix = 1e5*delta_lon/delta_pix
-                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.01)) and (clue_x >= (left_lon-0.01))):
+                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05)) and (clue_x >= (left_lon-0.05))):
                                     x = np.array([left_point[0],right_point[0]],dtype=int)
                                     y = np.array([left_lon,right_lon],dtype=np.float64)
-                                    #print(x,y)
-                                    #print(top_left[1])
-                                    #print(bot_left[1])
                                     popt,pcov = curve_fit(lin_line,x,y)
                                     max_lon = lin_line(top_left[0],*popt)
                                     min_lon = lin_line(top_right[0],*popt)
-                                    #print(max_lat,min_lat)
                                     if(max_lon - min_lon < 4):
                                         #done=True
                                         left_point_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
@@ -1160,7 +1180,6 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                             min_dist_right = dist_right
                                         delta_lon = right_point_lon - left_point_lon 
                                         meter_per_pix = 1e5*delta_lon/delta_pix
-                                        #print(meter_per_pix,max_lat,min_lat)
                 """
                 print(min_dist_sum)        
                 print(min_dist_right,arr) 
@@ -1182,16 +1201,33 @@ def main(image_dir,image_path,out_dir,clue_dir):
 
                 elif(min_dist_sum>1000 ):
                     lon3d = np.zeros((3,1))
-                    lon3d[0,0] = dup_lon_final_cen[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]][1] 
-                    lon3d[1,0] =dup_lon_final_cen[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]][0] 
-                    lon3d[2,0] = dup_lon_final[min_c_dist_arr[2]][stored_index_left[min_c_dist_arr[2]][min_c_dist_arr[3]]]
+                    print(min_c_dist_cen)
+                    lon3d[0,0] = min_c_dist_cen[1]
+                    lon3d[1,0] = min_c_dist_cen[0]
+                    lon3d[2,0] = min_c_dist_lon
 
                     
             elif(len(dist_x_right)==1):
-                #here, we only have one set of lats, all possibly duplicated
+                #here, we only have one set of lons, all possibly duplicated
                 # we need to pick the one that is closest to a corner
-                print("NEED TO ADD HERE - LINE 1170")
-                exit()
+                if(len(stored_dist_x_ur[0])>1):
+                    print(stored_dist_x_ur)
+                    arr = np.array([stored_dist_x_ul[0][0],stored_dist_x_ur[0][0],stored_dist_x_lr[0][0],stored_dist_x_ll[0][0]],dtype=np.float64)
+                    arr_indx = np.array([stored_indx_x_ul[0][0],stored_indx_x_ur[0][0],stored_indx_x_lr[0][0],stored_indx_x_ll[0][0]],dtype=np.float64)
+                    #print(arr)
+                    #print(arr_indx)
+                    best_lon = np.min(arr)
+                    #print(best_lon)
+                    idx = int(np.where(arr==best_lon)[0])
+                    #print(idx)
+                    lon3d=np.zeros((3,1))
+                    lon3d[2,0] = dup_lon_final[0][idx]
+                    lon3d[1,0] = dup_lon_final_cen[0][idx][0]
+                    lon3d[0,0] = dup_lon_final_cen[0][idx][1]
+                else:
+                    lon3d[2,0] = dup_lon_final[0][0]
+                    lon3d[1,0] = dup_lon_final_cen[0][0][0]
+                    lon3d[0,0] = dup_lon_final_cen[0][0][1]                  
             else:
                 lon3d=np.zeros((3,1))
 
@@ -1275,6 +1311,8 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     if(lon_max - lon_min > 3):
                         fitx_help=False
                         fitx_global=True
+            
+                
 
             # failed to fity but fitted x, so copy x
             if(fity_own==False and fitx_own==True and lat3d.shape[1]==2):
@@ -1318,6 +1356,11 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     if(lat_max - lat_min > 3):
                         fity_help=False
                         fity_global=True
+                        
+            if(fitx_own == False and fitx_help==False):
+                fitx_global = True
+            if(fity_own == False and fity_help==False):
+                fity_global = True
 
             print('Fit: xown,yown = ',fitx_own,', ',fity_own)
             print('Fit: xhelp,yhelp = ',fitx_help,', ',fity_help)
