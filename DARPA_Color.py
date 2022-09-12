@@ -25,6 +25,7 @@ from sys import exit
 import time
 import rasterio
 import FinalNumbers2 as Fnum
+import Tiling
 
 def lin_line(x, A, B): 
     return A*x + B
@@ -60,10 +61,10 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     
     space=0
-    failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
-    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/ValidationResults/GEO_0538_Mask.txt',delimiter=',')
+    #failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
+    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0011_Mask.txt',delimiter=',')
     #print(bounds)
-    #failure = False
+    failure = True
     
     if(failure==True):
         
@@ -82,7 +83,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
             except Exception as e: 
                 print(f"Exception {e} raised for file ",clue_file)
                 return
-        elif(training==False):
+        elif(training==True):
             # cannot find one for training, but we can make one for now
             try:
                 clues = np.genfromtxt(os.path.join(clue_dir,clue_file),delimiter=',')
@@ -91,7 +92,14 @@ def main(image_dir,image_path,out_dir,clue_dir):
             except Exception as e: 
                 print(f"Exception {e} raised for file ",clue_file)
                 return
-        
+            
+        # let us  
+            
+        tile = Tiling.tileall(img)
+        print(tile.shape)
+            
+            
+        # write out some results 
         real_res = os.path.join(image_dir,image_path.split('.tif')[0]+'.csv')
         df = pd.read_csv(real_res)
         row_test = df['row'].values
@@ -119,102 +127,14 @@ def main(image_dir,image_path,out_dir,clue_dir):
         
     else:
         
-        try:
-            #test_routine=True
-            #while test_routine == True:
+        #try:
+        test_routine=True
+        while test_routine == True:
 
             #----------------------------------#
             # load the mask of the map
+            tile = Tiling.main(bounds,img)
 
-            nres=750
-
-            nalf = int(nres*0.5)
-
-            ncol = int(np.ceil((bounds[3]-bounds[2]) / nres))+1
-            nrow =int( np.ceil((bounds[1]-bounds[0]) / nres))+1
-
-            ntile = nrow*2 + ncol*2
-
-            tl = np.zeros((2,ntile),dtype=int)
-            br = np.zeros((2,ntile),dtype=int)
-
-            # create a square atr each corner of the bounds
-            # there are four to create: [y,x]
-            tl = np.zeros(((2,ntile)),dtype=int)
-            br = np.zeros(((2,ntile)),dtype=int)
-            tile = np.zeros((nres,nres,3,ntile))
-            count=-1
-            #----------- Across the top     
-            starty = max(0,int(bounds[0]-nalf))
-            stopy = min(int(bounds[0]+nalf),img.shape[0])
-
-            for j in range(ncol):
-                count+=1
-                startx = max(0,int( bounds[2] + j*nres - nalf))
-                stopx = min(int(bounds[2] + (j)*nres + nalf),img.shape[1])
-                #print(count,startx,stopx)
-                tl[1,count] = startx
-                br[1,count] = stopx
-                tl[0,count] = starty
-                br[0,count] = stopy
-                
-
-                tile[:(stopy-starty),:(stopx-startx),:,count] = img[starty:stopy,startx:stopx,:]
-
-            #----------- Across the bottom
-            starty = max(0,int(bounds[1]-nalf))
-            stopy = min(int(bounds[1]+nalf),img.shape[0])
-
-            for j in range(ncol):
-                count+=1
-                startx = max(0,int( bounds[2] + j*nres - nalf))
-                stopx = min(int(bounds[2] + (j)*nres + nalf),img.shape[1])
-                #print(count,startx,stopx)
-                tl[1,count] = startx
-                br[1,count] = stopx
-                tl[0,count] = starty
-                br[0,count] = stopy
-
-                tile[:(stopy-starty),:(stopx-startx),:,count] = img[starty:stopy,startx:stopx,:]
-
-            #----------- Down the left side
-            startx = max(0,int(bounds[2]-nalf))
-            stopx = min(int(bounds[2]+nalf),img.shape[1])
-            #print(startx,stopx)
-            for j in range(nrow):
-                count+=1
-                starty = max(0,int( bounds[0] + j*nres - nalf))
-                stopy = min(int(bounds[0] + (j)*nres + nalf),img.shape[0])
-                #print(count,starty,stopy)
-                tl[0,count] = starty
-                br[0,count] = stopy
-                tl[1,count] = startx
-                br[1,count] = stopx
-
-                tile[:(stopy-starty),:(stopx-startx),:,count] = img[starty:stopy,startx:stopx,:]
-
-            #----------- Down the right side
-            startx = max(0,int(bounds[3]-nalf))
-            stopx = min(int(bounds[3]+nalf),img.shape[1])
-            
-            #print('2',startx,stopx)
-
-
-            for j in range(nrow):
-                count+=1
-                starty = max(0,int( bounds[0] + j*nres - nalf))
-                stopy = min(int(bounds[0] + (j)*nres + nalf),img.shape[0])
-                print(count,starty,stopy)
-                tl[0,count] = starty
-                br[0,count] = stopy
-                tl[1,count] = startx
-                br[1,count] = stopx
-
-                tile[:(stopy-starty),:(stopx-startx),:,count] = img[starty:stopy,startx:stopx,:]
-            tile = np.array(tile,dtype=np.uint8)
-            
-
-            #----------------------------------#
             pipeline = keras_ocr.pipeline.Pipeline(max_size=2000,scale=2)
 
             keywords=[]
@@ -1148,7 +1068,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                                         min_c_dist_cen = dup_lon_final_cen[k][stored_index_right[k][i]]
                                 delta_lon = right_lon - left_lon
                                 delta_pix = right_point[0] - left_point[0]
-                                #print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix)
+                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix)
                                 meter_per_pix = 1e5*delta_lon/delta_pix
                                 if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05)) and (clue_x >= (left_lon-0.05))):
                                     x = np.array([left_point[0],right_point[0]],dtype=int)
@@ -1468,7 +1388,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                         np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                           fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
             test_routine = False
-            #"""
+            """
         except Exception as e:
             print(f"Exception {e}: File = ",image_path)
             #Get clue
@@ -1513,7 +1433,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
             else:
                 np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                       fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
-            #"""
+            """
     print('Time = ',time.time()-tz)
     return
 
