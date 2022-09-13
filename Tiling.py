@@ -1,7 +1,7 @@
 import numpy as np
 
 def tileall(img):
-            nres=1050
+            nres=750
 
             nalf = int(nres*0.5)
 

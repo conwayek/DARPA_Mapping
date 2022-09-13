@@ -7,18 +7,20 @@ def lin_line(x, A, B):
 
 def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
             summ = np.sum(bounds)
-            if(summ==np.nan):
+            if(np.isfinite(summ)==False):
                 top_left = [0,0]
                 bot_left = [img_shape[0],0]
                 bot_right = [img_shape[0],img_shape[1]]
                 top_right = [0,img_shape[1]]
-    
+                loc_count = 0   
+                print('Failed Case') 
             else:
                 #calculate distance to our four corners
                 top_left = [bounds[0],bounds[2]]
                 bot_left = [bounds[1],bounds[2]]
                 bot_right = [bounds[1],bounds[3]]
                 top_right = [bounds[0],bounds[3]]
+                loc_count = 1    
             
             
             #create duplicate set of lats
@@ -343,15 +345,16 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                 dist_ur_top = stored_dist_y_ur[p][j]
                                 #dist_lr_top = stored_dist_y_lr[p][j]
                                 #dist_ll_top = stored_dist_y_ll[p][j]
-                                if(summ==np.nan):
-                                    app = np.array([dist_ul_top,dist_ur_top,dist_top,dist_lr_bot,dist_ll_bot,dist_bot])
+                                if(np.isfinite(summ)==False):
+                                    #app = np.array([dist_ul_top,dist_ur_top,dist_top,dist_lr_bot,dist_ll_bot,dist_bot])
+                                    app = np.array([dist_top,dist_bot])
                                 else:
                                     app = np.array([dist_ul_top,dist_ur_top,dist_lr_bot,dist_ll_bot])
                                 min_c = np.min(app)
                                 loc = np.where(min_c == app)[0]
                                 if(min_c<min_c_dist):
                                     min_c_dist = min_c
-                                    if(loc<=1):
+                                    if(loc<=loc_count):
                                         min_c_dist_lat = top_lat
                                         min_c_dist_cen = dup_lat_final_cen[p][stored_index_top[p][j]] #x,y format
                                     else:
@@ -377,11 +380,13 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                         bot_point_lat = dup_lat_final[k][stored_index_bot[k][i]]
                                         delta_pix = bot_point[1] - top_point_cen[1] 
                                         total = dist_top + dist_bot
-                                        bot_dist_corner = min(dist_ul_top,dist_ur_top)
-                                        top_dist_corner = min(dist_lr_bot,dist_ll_bot)
-                                        if(summ==np.nan):
-                                            top_max = min(dist_top,top_dist_corner)
-                                            bot_max = min(dist_bot,bot_dist_corner)
+                                        top_dist_corner = min(dist_ul_top,dist_ur_top)
+                                        bot_dist_corner = min(dist_lr_bot,dist_ll_bot)
+                                        if(np.isfinite(summ)==False):
+                                            top_max = dist_top + min(top_point[0],abs(top_point[0]-top_right[1]))
+                                            #top_max = min(dist_top,top_dist_corner)
+                                            bot_max = dist_bot + min(bot_point[0],abs(bot_point[0]-bot_right[1]))#
+                                            #bot_max = min(dist_bot,bot_dist_corner)
                                         else:
                                             top_max = max(dist_top,top_dist_corner)
                                             bot_max = max(dist_bot,bot_dist_corner)
@@ -407,7 +412,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                 print(dup_lat_final[arr[2]][stored_index_top[arr[2]][arr[3]]])
                 print(dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]])
                 """
-                if(summ==np.nan):
+                if(np.isfinite(summ)==False):
                     thresh = 1e5
                 else:
                     thresh = 1000
@@ -447,6 +452,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                     lat3d[1,0] = dup_lat_final_cen[0][idx][0]
                     lat3d[0,0] = dup_lat_final_cen[0][idx][1]
                 else:
+                    lat3d=np.zeros((3,1))
                     lat3d[2,0] = dup_lat_final[0][0]
                     lat3d[1,0] = dup_lat_final_cen[0][0][0]
                     lat3d[0,0] = dup_lat_final_cen[0][0][1]                  
@@ -526,15 +532,16 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                 #dist_ur_left = stored_dist_x_ur[p][j]
                                 #dist_lr_left = stored_dist_x_lr[p][j]
                                 dist_ll_left = stored_dist_x_ll[p][j]
-                                if(summ==np.nan):
-                                    app = np.array([dist_ul_left,dist_ll_left,dist_left,dist_ur_right,dist_lr_right,dist_right])
+                                if(np.isfinite(summ)==False):
+                                    #app = np.array([dist_ul_left,dist_ll_left,dist_left,dist_ur_right,dist_lr_right,dist_right])
+                                    app = np.array([dist_left,dist_right])
                                 else:
                                     app = np.array([dist_ul_left,dist_ll_left,dist_ur_right,dist_lr_right])
                                 min_c = np.min(app)
                                 loc = np.where(min_c == app)[0]
                                 if(min_c<min_c_dist):
                                     min_c_dist = min_c
-                                    if(loc<=1):
+                                    if(loc<=loc_count):
                                         min_c_dist_lon = left_lon
                                         min_c_dist_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
                                     else:
@@ -561,7 +568,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                         total = dist_right + dist_left
                                         left_dist_corner = min(dist_ul_left,dist_ll_left)
                                         right_dist_corner = min(dist_ur_right,dist_lr_right)
-                                        if(summ==np.nan):
+                                        if(np.isfinite(summ)==False):
                                             left_max = min(dist_left,left_dist_corner)
                                             right_max = min(dist_right,right_dist_corner)
                                         else:
@@ -587,7 +594,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                 print(dup_lon_final[arr[2]][stored_index_left[arr[2]][arr[3]]])
                 print(dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]])
                 """
-                if(summ==np.nan):
+                if(np.isfinite(summ)==False):
                     thresh = 1e5
                 else:
                     thresh = 1000
@@ -627,6 +634,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                     lon3d[1,0] = dup_lon_final_cen[0][idx][0]
                     lon3d[0,0] = dup_lon_final_cen[0][idx][1]
                 else:
+                    lon3d=np.zeros((3,1))
                     lon3d[2,0] = dup_lon_final[0][0]
                     lon3d[1,0] = dup_lon_final_cen[0][0][0]
                     lon3d[0,0] = dup_lon_final_cen[0][0][1]                  
@@ -636,7 +644,20 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                 
             return lat3d,lon3d
 
-            
+if __name__=="__main__":
+    file='/scratch/e.conway/DARPA_MAPS/Training/GEO_0089.tif'
+    with rasterio.open(file,'r') as f:
+        data=f.read()
+    data = data.transpose((1,2,0))
+    lon = [-120,-119]  
+    lat = [40,39]
+    clue_x = -120
+    clue_y = 39  
+    clon = [[10,20],[3000,4000]]
+    clat = [[10,20],[3000,4000]]
+    bounds = [np.nan,np.nan,np.nan,np.nan]
+
+
             
             
             
