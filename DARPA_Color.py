@@ -63,11 +63,11 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     space=0
     failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
-    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0011_Mask.txt',delimiter=',')
+    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0008_Mask.txt',delimiter=',')
     #print(bounds)
-    #failure = True
+    #failure = False
     if(failure==True):
-        bounds=None
+        bounds = np.array([np.nan,np.nan,np.nan,np.nan])
 
         
     try:
@@ -202,6 +202,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
             
 
             #----------------------------------#
+            print(bounds)
             lat3d,lon3d = PairMatching.main(lat,clat,lon,clon,img.shape,clue_x,clue_y,bounds)
               
             print('lat 3',lat3d)

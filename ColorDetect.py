@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 from sklearn.linear_model import RANSACRegressor
 import rasterio
+import time
 
 def main(image_dir,out_dir,image_path,width=0):
 
@@ -138,12 +139,13 @@ def main(image_dir,out_dir,image_path,width=0):
     plt.savefig('img2.png',dpi=400)
     plt.close()
 
-    
 
     idx=[]
     for i in range(img.shape[0]):
         slc = img2[i,:]
         idx.append([np.where(slc==1)[0]])
+        
+    tz = time.time()
     
     idx_final_y = []
     for i in range(len(idx)):
@@ -159,16 +161,19 @@ def main(image_dir,out_dir,image_path,width=0):
             #idx_final_y.append(x)
         else:
             idx_final_y.append([])
+            
+            
         
     img_mask = np.zeros((img.shape[0:2]))
     for i in range(len(idx_final_y)):
         img_mask[i,idx_final_y[i]] = 1
         #img[i,idx_final[i]] = 0
+    """
     fig=plt.figure()
     plt.imshow(img_mask,aspect='auto')
     plt.savefig('post_ransacy.png',dpi=400)
     plt.close()
-        
+    """
     idx=[]
     for i in range(img_mask.shape[1]):
         slc = img_mask[:,i]
@@ -191,10 +196,12 @@ def main(image_dir,out_dir,image_path,width=0):
     for i in range(len(idx_final_x)):
         img3[idx_final_x[i],i] = 1
 
+    """
     fig=plt.figure()
     plt.imshow(img3,aspect='auto')
     plt.savefig('post_ransacx.png',dpi=400)
     plt.close()
+    """
         
     if(np.sum(img3)/(img3.shape[0]*img3.shape[1]) < 0.3):
         min_thresh_y = img.shape[0] * 0.1
@@ -294,12 +301,12 @@ def main(image_dir,out_dir,image_path,width=0):
     """
     
     img_temp = img3.copy() 
-    #"""
+    """
     fig=plt.figure()
     plt.imshow(img3,aspect='auto')
     plt.savefig('img3.png',dpi=400)
     plt.close()
-    #"""
+    """
 
     # Count the start/end/sum of all strips of missing pixels. 
     # remove all but the biggest set
@@ -354,12 +361,12 @@ def main(image_dir,out_dir,image_path,width=0):
             
     # Count the start/end/sum of all strips of missing pixels. 
     # remove all but the biggest set
-    #"""
+    """
     fig=plt.figure()
     plt.imshow(img_temp,aspect='auto')
     plt.savefig('img_tempx.png',dpi=400)
     plt.close()
-    #"""
+    """
     idy=[]
     for i in range(img_temp.shape[0]):
         slc = img_temp[i,:]
@@ -409,12 +416,12 @@ def main(image_dir,out_dir,image_path,width=0):
             img_temp[start_y[i]:stop_y[i],:] = 0
 
     img3 = img_temp.copy()
-    #"""
+    """
     fig=plt.figure()
     plt.imshow(img_temp,aspect='auto')
     plt.savefig('img_tempy.png',dpi=400)
     plt.close()
-    #"""
+    """
     min_x = np.zeros(img.shape[0]) ; min_x[:] = np.nan
     max_x = np.zeros(img.shape[0]) ; max_x[:] = np.nan
     min_y = np.zeros(img.shape[1]) ; min_y[:] = np.nan

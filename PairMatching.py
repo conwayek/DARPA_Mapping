@@ -5,9 +5,9 @@ from scipy.optimize import curve_fit
 def lin_line(x, A, B): 
     return A*x + B
 
-def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
-    
-            if(bounds==None):
+def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
+            summ = np.sum(bounds)
+            if(summ==np.nan):
                 top_left = [0,0]
                 bot_left = [img_shape[0],0]
                 bot_right = [img_shape[0],img_shape[1]]
@@ -343,7 +343,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                                 dist_ur_top = stored_dist_y_ur[p][j]
                                 #dist_lr_top = stored_dist_y_lr[p][j]
                                 #dist_ll_top = stored_dist_y_ll[p][j]
-                                if(bounds==None):
+                                if(summ==np.nan):
                                     app = np.array([dist_ul_top,dist_ur_top,dist_top,dist_lr_bot,dist_ll_bot,dist_bot])
                                 else:
                                     app = np.array([dist_ul_top,dist_ur_top,dist_lr_bot,dist_ll_bot])
@@ -379,7 +379,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                                         total = dist_top + dist_bot
                                         bot_dist_corner = min(dist_ul_top,dist_ur_top)
                                         top_dist_corner = min(dist_lr_bot,dist_ll_bot)
-                                        if(bounds==None):
+                                        if(summ==np.nan):
                                             top_max = min(dist_top,top_dist_corner)
                                             bot_max = min(dist_bot,bot_dist_corner)
                                         else:
@@ -407,7 +407,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                 print(dup_lat_final[arr[2]][stored_index_top[arr[2]][arr[3]]])
                 print(dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]])
                 """
-                if(bounds==None):
+                if(summ==np.nan):
                     thresh = 1e5
                 else:
                     thresh = 1000
@@ -526,7 +526,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                                 #dist_ur_left = stored_dist_x_ur[p][j]
                                 #dist_lr_left = stored_dist_x_lr[p][j]
                                 dist_ll_left = stored_dist_x_ll[p][j]
-                                if(bounds==None):
+                                if(summ==np.nan):
                                     app = np.array([dist_ul_left,dist_ll_left,dist_left,dist_ur_right,dist_lr_right,dist_right])
                                 else:
                                     app = np.array([dist_ul_left,dist_ll_left,dist_ur_right,dist_lr_right])
@@ -561,7 +561,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                                         total = dist_right + dist_left
                                         left_dist_corner = min(dist_ul_left,dist_ll_left)
                                         right_dist_corner = min(dist_ur_right,dist_lr_right)
-                                        if(bounds==None):
+                                        if(summ==np.nan):
                                             left_max = min(dist_left,left_dist_corner)
                                             right_max = min(dist_right,right_dist_corner)
                                         else:
@@ -587,7 +587,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds=None):
                 print(dup_lon_final[arr[2]][stored_index_left[arr[2]][arr[3]]])
                 print(dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]])
                 """
-                if(bounds==None):
+                if(summ==np.nan):
                     thresh = 1e5
                 else:
                     thresh = 1000
