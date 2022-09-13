@@ -53,7 +53,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 deltay1 = 1e5 * (lat_max - lat_min) /img_shape[0] 
                 deltax1 = 1e5 * (lon_max - lon_min) /img_shape[1] 
                 print('meter per pixel y,x = ',deltay1,deltax1)
-                if(abs(deltax1/deltay1)>3 or abs(deltax1/deltay1)<0.3):
+                if(abs(deltax1/deltay1)>2 or abs(deltax1/deltay1)<0.5):
                     print('Large dispersion.....checking x points against y fit')
                     # try fit x points using y fit
                     dist = np.zeros(2)
@@ -74,7 +74,8 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lon_max = Y[-1]
                     lon_min = Y[0]
                     deltax2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
-                    if(abs(deltay1 / deltax2) < 3 and abs(deltay1/deltax2)>0.3 and (lon_max-lon_min)<3):
+                    
+                    if(abs(deltay1 / deltax2) < 2 and abs(deltay1/deltax2)>0.5 and (lon_max-lon_min)<3):
                         fitx2=True
                     else: 
                         fitx2=False
@@ -101,7 +102,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lat_min = Y[-1]
                     lat_max = Y[0]
                     deltay2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
-                    if(abs(deltax1 / deltay2) < 3 and abs(deltax1 / deltay2) > 0.3 and (lat_max-lat_min)<3):
+                    if(abs(deltax1 / deltay2) < 2 and abs(deltax1 / deltay2) > 0.5 and (lat_max-lat_min)<3):
                         fity2=True
                     else: 
                         fity2=False

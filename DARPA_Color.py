@@ -59,9 +59,9 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     space=0
     #failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
-    bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0092_Mask.txt',delimiter=',')
-    print(bounds)
-    failure = False
+    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0092_Mask.txt',delimiter=',')
+    #print(bounds)
+    failure = True
     if(failure==True):
         bounds = np.array([np.nan,np.nan,np.nan,np.nan])
     redo = False
@@ -181,9 +181,15 @@ def main(image_dir,image_path,out_dir,clue_dir):
             #----------------------------------# 
             if(redo==False):
                 redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo)
+                if(np.isfinite(np.sum(bounds))==False):
+                    done=True
+                if(redo==False):
+                    done=True
             elif(redo==True):
                 redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo)
                 done=True
+                
+            
             #"""
             #test_routine = False
             """
