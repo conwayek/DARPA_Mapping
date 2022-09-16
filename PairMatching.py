@@ -364,15 +364,17 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                 
                                 delta_lat = top_lat - bot_lat
                                 delta_pix = bot_point[1] - top_point[1]
-                                #print(top_lat,bot_lat,delta_lat,top_point,bot_point,delta_pix,dist_top,dist_bot)
                                 meter_per_pix = 1e5*delta_lat/delta_pix
-                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.05)) and (clue_y >= (bot_lat-0.05))):
+                                #print(top_lat,bot_lat,delta_lat,top_point,bot_point,\
+                                #      delta_pix,dist_top,dist_bot,meter_per_pix)
+                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.05))\
+                                   and (clue_y >= (bot_lat-0.05)) and (meter_per_pix<25) and (meter_per_pix>1.5)):
                                     x = np.array([top_point[1],bot_point[1]],dtype=np.float64)
                                     y = np.array([top_lat,bot_lat],dtype=np.float64)
                                     popt,pcov = curve_fit(lin_line,x,y)
                                     max_lat = lin_line(top_left[1],*popt)
                                     min_lat = lin_line(bot_left[1],*popt)
-                                    if(max_lat - min_lat < 2):
+                                    if(max_lat - min_lat <= 2):
                                         #done=True
                                         top_point_cen = dup_lat_final_cen[p][stored_index_top[p][j]]
                                         top_point_lat = dup_lat_final[p][stored_index_top[p][j]]
@@ -391,7 +393,8 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                             top_max = max(dist_top,top_dist_corner)
                                             bot_max = max(dist_bot,bot_dist_corner)
                                         total = top_max+bot_max
-                                        print(total,top_point_lat,bot_point_lat,top_point_cen,bot_point_cen,top_max,bot_max)
+                                        print(total,top_point_lat,bot_point_lat,top_point_cen,\
+                                              bot_point_cen,top_max,bot_max,meter_per_pix,max_lat,min_lat)
                                         if(total<min_dist_sum):
                                             min_dist_sum = total
                                             arr = [k,i,p,j]
@@ -549,15 +552,16 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                         min_c_dist_cen = dup_lon_final_cen[k][stored_index_right[k][i]]
                                 delta_lon = right_lon - left_lon
                                 delta_pix = right_point[0] - left_point[0]
-                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix)
                                 meter_per_pix = 1e5*delta_lon/delta_pix
-                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05)) and (clue_x >= (left_lon-0.05))):
+                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix,meter_per_pix)
+                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05))\
+                                   and (clue_x >= (left_lon-0.05)) and (meter_per_pix<25) and (meter_per_pix>1.5)):
                                     x = np.array([left_point[0],right_point[0]],dtype=int)
                                     y = np.array([left_lon,right_lon],dtype=np.float64)
                                     popt,pcov = curve_fit(lin_line,x,y)
                                     max_lon = lin_line(top_left[0],*popt)
                                     min_lon = lin_line(top_right[0],*popt)
-                                    if(max_lon - min_lon < 4):
+                                    if(max_lon - min_lon <= 2):
                                         #done=True
                                         left_point_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
                                         left_point_lon = dup_lon_final[p][stored_index_left[p][j]]
@@ -575,7 +579,9 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                             left_max = max(dist_left,left_dist_corner)
                                             right_max = max(dist_right,right_dist_corner)
                                         total = left_max + right_max
-                                        print(total,left_point_lon,right_point_lon,left_point_cen,right_point_cen,left_max,right_max)
+                                        print(total,left_point_lon,right_point_lon,\
+                                              left_point_cen,right_point_cen,left_max,\
+                                              right_max,meter_per_pix,max_lon,min_lon)
                                         if(total<min_dist_sum):
                                             min_dist_sum = total
                                             arr = [k,i,p,j]

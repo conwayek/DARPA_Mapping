@@ -11,8 +11,22 @@ def main(image_dir,out_dir,image_path,width=0):
     #img = cv2.imread(os.path.join(image_dir,image_path))
     with rasterio.open(os.path.join(image_dir,image_path)) as f:
         img = f.read()
-    img = img.transpose((1,2,0))
-    
+    print(img.shape)
+    if(img.shape[0]==3):
+        img = img.transpose((1,2,0))
+    elif(img.shape[0]>3):
+        img = img[0:3,:,:].transpose((1,2,0))
+    elif(img.shape[0]==2):
+        x =img[0,:,:]
+        img = np.concatenate((img,x[np.newaxis,:,:]),axis=0)    
+        img = img.transpose((1,2,0))
+    else:
+        x =img[0,:,:]
+        img = np.concatenate((img,x[np.newaxis,:,:]),axis=0)    
+        img = np.concatenate((img,x[np.newaxis,:,:]),axis=0)    
+        img = img.transpose((1,2,0))
+        x=None
+    print(img.shape)
     img = np.array(img,dtype=np.float64)
     img[img<=2] = np.nan
     img[img==255] = np.nan
@@ -347,12 +361,11 @@ def main(image_dir,out_dir,image_path,width=0):
             stop_x.append(img_temp.shape[1])
             sum_x_i.append(i)
 
-    if(stop_x[-1] == img_temp.shape[1]):
+    if(stop_x[-1] == img_temp.shape[1] and len(start_x)!=len(stop_x)):
         start_x.append(img_temp.shape[1])
-    if(start_x[-1] == img_temp.shape[1]):
+    if(start_x[-1] == img_temp.shape[1] and len(start_x)!=len(stop_x)):
         stop_x.append(img_temp.shape[1])
     delta = np.array(stop_x,dtype=int) - np.array(start_x,dtype=int)
-    #print('deltax',delta)
 
     for i in range(len(delta)):
         if(delta[i]<0.05*img_temp.shape[1]):
@@ -402,15 +415,11 @@ def main(image_dir,out_dir,image_path,width=0):
         if(i==img_temp.shape[0]-1):
             stop_y.append(img_temp.shape[0])
             sum_y_i.append(i)
-    if(stop_y[-1] == img_temp.shape[0]):
+    if(stop_y[-1] == img_temp.shape[0] and len(start_y)!=len(stop_y)):
         start_y.append(img_temp.shape[0])
-    if(start_y[-1] == img_temp.shape[0]):
+    if(start_y[-1] == img_temp.shape[0] and len(start_y)!=len(stop_y)):
         stop_y.append(img_temp.shape[0])
-    print(start_y)
-    print(stop_y)
     delta = np.array(stop_y,dtype=int) - np.array(start_y,dtype=int)
-    print(delta)
-    #print('deltay',delta)
     for i in range(len(delta)):
         if(delta[i]<0.05*img_temp.shape[0]):
             img_temp[start_y[i]:stop_y[i],:] = 0
@@ -462,21 +471,27 @@ def main(image_dir,out_dir,image_path,width=0):
     #plt.show()
     plt.close()
 
+    return_fail = np.isfinite(np.sum(bounds))
+
+    if(return_fail == True):
+        return_fail = False
+    else:
+        return_fail = True
         
     return return_fail,img3,bounds
 
         
     
 if __name__=="__main__":
-    image_dir = '/scratch/e.conway/DARPA_MAPS/Training/'
-    image_path='GEO_0012.tif'
-    out_dir = '/scratch/e.conway/DARPA_MAPS/Results/'
+    image_dir = '/scratch/e.conway/DARPA_MAPS/Validation/'
+    image_path='GEO_0994.tif'
+    out_dir = '/scratch/e.conway/DARPA_MAPS/ValidationResults/'
     ret_fail,mask,bounds = main(image_dir,out_dir,image_path)
     
     out = image_path.split('.tif')[0]+'_Mask.txt'
     np.savetxt(out,mask)
     
-    fig = plt.figure()
-    plt.imshow(mask)
-    plt.savefig(image_file.split('.tif')[0]+'_Mask.png',dpi=400)
-    plt.close()
+    #fig = plt.figure()
+    #plt.imshow(mask)
+    #plt.savefig(image_file.split('.tif')[0]+'_Mask.png',dpi=400)
+    #plt.close()

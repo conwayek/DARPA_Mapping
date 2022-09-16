@@ -1,5 +1,4 @@
 import json
-import geopy.distance
 import numpy as np
 import os
 import cv2
@@ -58,18 +57,19 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     
     space=0
-    #failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
-    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0092_Mask.txt',delimiter=',')
+    failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
+    #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0095_Mask.txt',delimiter=',')
     #print(bounds)
-    failure = True
+    #failure = True
+    redo = False
     if(failure==True):
         bounds = np.array([np.nan,np.nan,np.nan,np.nan])
-    redo = False
+        redo=True
     done=False        
-            #try:
-    test_routine=True
-    #while test_routine == True:
-    while done == False:
+    try:
+        #test_routine=True
+        #while test_routine == True:
+        while done == False:
             if(redo==True):
                 print('-----Reattempting Model-----')
                 print('Reset bounds')
@@ -148,12 +148,12 @@ def main(image_dir,image_path,out_dir,clue_dir):
             clon = []
             clat = []
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_x,abs_tol=3)):     
+                if(math.isclose(final_numbers[i],clue_x,abs_tol=2)):     
                     lon.append(final_numbers[i])
                     clon.append(final_num_centers[i])
 
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_y,abs_tol=3)):     
+                if(math.isclose(final_numbers[i],clue_y,abs_tol=2)):     
                     lat.append(final_numbers[i])
                     clat.append(final_num_centers[i])
 
@@ -191,8 +191,8 @@ def main(image_dir,image_path,out_dir,clue_dir):
                 
             
             #"""
-            #test_routine = False
-            """
+            test_routine = False
+            #"""
     except Exception as e:
             print(f"Exception {e}: File = ",image_path)
             #Get clue
@@ -243,7 +243,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                 np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                       fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
             done=True
-            """
+            #"""
     print('Time = ',time.time()-tz)
     return
 

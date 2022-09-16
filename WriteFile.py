@@ -30,7 +30,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lon_max = Y[-1]
                     lon_min = Y[0]
                     print('lon max/min own = ',lon_max,lon_min)
-                    if(lon_max - lon_min > 3):
+                    deltax = 1e5 * (lon_max - lon_min) /img_shape[1] 
+                    print('delta x',deltax)
+                    if(lon_max - lon_min > 2.5):
                         fitx_own=False
 
 
@@ -44,7 +46,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lat_min = Y[-1]
                     lat_max = Y[0]
                     print('lat max/min own = ',lat_max,lat_min)
-                    if(lat_max - lat_min > 3):
+                    deltay = 1e5 * (lat_max - lat_min) /img_shape[0] 
+                    print('delta y',deltay)
+                    if(lat_max - lat_min > 2.5):
                         fity_own=False
 
             print('Checking Fits against each other') 
@@ -53,7 +57,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 deltay1 = 1e5 * (lat_max - lat_min) /img_shape[0] 
                 deltax1 = 1e5 * (lon_max - lon_min) /img_shape[1] 
                 print('meter per pixel y,x = ',deltay1,deltax1)
-                if(abs(deltax1/deltay1)>2 or abs(deltax1/deltay1)<0.5):
+                print(abs(deltax1/deltay1) , abs(deltax1/deltay1))
+                if(abs(deltax1/deltay1)>1.2 or abs(deltax1/deltay1)<0.8 or abs(deltax1)<1.5 or abs(deltay1)<1.5 \
+                  or abs(deltax1)>25 or abs(deltay1)>25):
                     print('Large dispersion.....checking x points against y fit')
                     # try fit x points using y fit
                     dist = np.zeros(2)
@@ -63,9 +69,11 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     poptx1[0] = -poptx1[0]
                     # pick best x point i.e. the one closest to our key point
                     if(dist[0]<dist[1]):
+                        print('Best Lon = ',lon3d[2,0]) 
                         c = lon3d[2,0] - poptx1[0]*lon3d[1,0]
                         poptx1[1] = c
                     else:
+                        print('Best Lon = ',lon3d[2,1]) 
                         c = lon3d[2,1] - poptx1[0]*lon3d[1,1]
                         poptx1[1] = c
                     X = np.linspace(0,img_shape[1]-1,img_shape[1])
@@ -75,23 +83,28 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lon_min = Y[0]
                     deltax2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
                     
-                    if(abs(deltay1 / deltax2) < 2 and abs(deltay1/deltax2)>0.5 and (lon_max-lon_min)<3):
+                    if(abs(deltay1 / deltax2) < 1.2 and abs(deltay1/deltax2)>0.8 and (lon_max-lon_min)<3 \
+                      and abs(deltax2)>1.5 and abs(deltax2)<25):
                         fitx2=True
                     else: 
                         fitx2=False
                     print('Lon point check with Y fit: ',fitx2)
-                   
+                    print('Delta y1, x2 = ',deltay1,deltax2) 
+
+
                     print('Large dispersion.....checking y points against X fit')
                     # we have 2 numbers, need to pick closest to clue y
                     dist = np.zeros(2)
                     dist[0] = abs(abs(clue_y) - abs(lat3d[2,0]))
                     dist[1] = abs(abs(clue_y) - abs(lat3d[2,1]))
                     if(dist[0]<dist[1]):
+                        print('Best Lat = ',lat3d[2,0]) 
                         popty1=poptx.copy()
                         popty1[0] = -popty1[0]
                         c = lat3d[2,0] - popty1[0]*lat3d[0,0]
                         popty1[1] = c
                     else:
+                        print('Best Lat = ',lat3d[2,1]) 
                         popty1=poptx.copy()
                         popty1[0] = -popty1[0]
                         c = lat3d[2,1] - popty1[0]*lat3d[0,1]
@@ -101,12 +114,14 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         
                     lat_min = Y[-1]
                     lat_max = Y[0]
-                    deltay2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
-                    if(abs(deltax1 / deltay2) < 2 and abs(deltax1 / deltay2) > 0.5 and (lat_max-lat_min)<3):
+                    deltay2 = 1e5 * (lat_max - lat_min) /img_shape[0] 
+                    if(abs(deltax1 / deltay2) < 1.2 and abs(deltax1 / deltay2) > 0.8 and (lat_max-lat_min)<3 \
+                      and abs(deltay2)>1.5 and abs(deltay2)<25):
                         fity2=True
                     else: 
                         fity2=False
                     print('Lat point check with X fit: ',fity2)
+                    print('Delta y2, x1 = ',deltay2,deltax1) 
 
                     if(fitx2 == True and fity2==True): 
                         # use x1 and y2 fits
@@ -118,8 +133,10 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                             print('Using Y fit with x points')
                             fitx_own = False
                     elif(fity2 == False and fitx2==True):
+                        print('Using Y fit with x points')
                         fitx_own = False 
                     elif(fitx2 == False and fity2==True):
+                        print('Using X fit with y points')
                         fity_own = False 
 
             # failed to fitx but fitted y, so copy y
@@ -143,7 +160,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 lon_max = Y[-1]
                 lon_min = Y[0]
                 print('lon max/min help = ',lon_max,lon_min)
-                if(lon_max - lon_min > 3):
+                if(lon_max - lon_min > 2.5):
                     fitx_help=False
                     fitx_global=True
                     
@@ -160,7 +177,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lon_max = Y[-1]
                     lon_min = Y[0]
                     print('lon max/min help = ',lon_max,lon_min)
-                    if(lon_max - lon_min > 3):
+                    if(lon_max - lon_min > 2.5):
                         fitx_help=False
                         fitx_global=True
             
@@ -190,7 +207,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 lat_min = Y[-1]
                 lat_max = Y[0]
                 print('lat max/min help = ',lat_max,lat_min)
-                if(lat_max - lat_min > 3):
+                if(lat_max - lat_min > 2.5):
                         fity_help=False
                         fity_global=True
             elif(fity_own==False and fitx_own==True and lat3d.shape[1]==1):
@@ -205,7 +222,7 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     lat_min = Y[-1]
                     lat_max = Y[0]
                     print('lat max/min help = ',lat_max,lat_min)
-                    if(lat_max - lat_min > 3):
+                    if(lat_max - lat_min > 2.5):
                         fity_help=False
                         fity_global=True
                         
@@ -246,9 +263,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                             diff_lat = meas_lat - calc_lat[i]
                             diff_lon = meas_lon - calc_lon[i]
 
-                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
+                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2.5):
                             calc_lat[i] = clue_y
-                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
+                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2.5):
                             calc_lon[i] = clue_x
 
                     if(training==True):
@@ -272,9 +289,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                             diff_lat = meas_lat - calc_lat[i]
                             
 
-                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
+                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2.5):
                             calc_lat[i] = clue_y
-                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
+                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2.5):
                             calc_lon[i] = clue_x
                     if(training==True):
                         np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
@@ -296,9 +313,9 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                             meas_lat = row_lat[i]
                             diff_lat = meas_lat - calc_lat[i]
 
-                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2):
+                        if(abs(abs(calc_lat[i]) - abs(clue_y) ) > 2.5):
                             calc_lat[i] = clue_y
-                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2):
+                        if(abs(abs(calc_lon[i]) - abs(clue_x) ) > 2.5):
                             calc_lon[i] = clue_x
                     if(training==True):
                         np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,row_lat,col_lon,calc_lat,calc_lon]).T,\
