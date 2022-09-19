@@ -1,3 +1,39 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+To find the best pairs of coordinates
+
+Args:
+lat points
+lon points
+lat pixel coordinates
+lon pixel coordinates
+shape of image
+clue lon
+clue lat
+bounds of map
+max meter per pixel
+min meter per pixel
+
+Out:
+best pair of lon plus pixel location
+best pair of lat plus pixel location
+
+"""
+
 import numpy as np
 from scipy.optimize import curve_fit
 
@@ -5,7 +41,7 @@ from scipy.optimize import curve_fit
 def lin_line(x, A, B): 
     return A*x + B
 
-def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
+def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min):
             summ = np.sum(bounds)
             if(np.isfinite(summ)==False):
                 top_left = [0,0]
@@ -365,10 +401,10 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                 delta_lat = top_lat - bot_lat
                                 delta_pix = bot_point[1] - top_point[1]
                                 meter_per_pix = 1e5*delta_lat/delta_pix
-                                #print(top_lat,bot_lat,delta_lat,top_point,bot_point,\
-                                #      delta_pix,dist_top,dist_bot,meter_per_pix)
+                                print(top_lat,bot_lat,delta_lat,top_point,bot_point,\
+                                      delta_pix,dist_top,dist_bot,meter_per_pix,mpix_max,mpix_min)
                                 if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.05))\
-                                   and (clue_y >= (bot_lat-0.05)) and (meter_per_pix<25) and (meter_per_pix>1.5)):
+                                   and (clue_y >= (bot_lat-0.05)) and (meter_per_pix<=mpix_max) and (meter_per_pix>=mpix_min)):
                                     x = np.array([top_point[1],bot_point[1]],dtype=np.float64)
                                     y = np.array([top_lat,bot_lat],dtype=np.float64)
                                     popt,pcov = curve_fit(lin_line,x,y)
@@ -553,9 +589,9 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds):
                                 delta_lon = right_lon - left_lon
                                 delta_pix = right_point[0] - left_point[0]
                                 meter_per_pix = 1e5*delta_lon/delta_pix
-                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix,meter_per_pix)
+                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix,meter_per_pix,mpix_max,mpix_min)
                                 if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05))\
-                                   and (clue_x >= (left_lon-0.05)) and (meter_per_pix<25) and (meter_per_pix>1.5)):
+                                   and (clue_x >= (left_lon-0.05)) and (meter_per_pix<=mpix_max) and (meter_per_pix>=mpix_min)):
                                     x = np.array([left_point[0],right_point[0]],dtype=int)
                                     y = np.array([left_lon,right_lon],dtype=np.float64)
                                     popt,pcov = curve_fit(lin_line,x,y)

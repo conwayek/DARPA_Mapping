@@ -1,3 +1,34 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+Considers all keywords and fuses nearby keywords together
+
+Args:
+keywords,
+bboxes
+centers
+
+Out:
+keywords,
+bboxes,
+centers
+
+
+"""
+
 import math
 import numpy as np
 from tqdm import tqdm
@@ -24,7 +55,7 @@ def main(keywords,bboxes,centers):
                         bot_left_1 = [bboxes[i][0][0],bboxes[i][1][1]]
                         contin = True
                         tnow = (time.time() - tz)
-                        if(tnow > 3600):
+                        if(tnow > 300):
                             done=True
                         for j in range(len(keywords)):
                             if(keywords[j]!=''):
@@ -33,8 +64,8 @@ def main(keywords,bboxes,centers):
                                 bot_right_2 = [bboxes[j][1][0],bboxes[j][1][1]]
                                 bot_left_2 = [bboxes[j][0][0],bboxes[j][1][1]]
                                 # is box 2 close to box 1 on left side of 1
-                                if(math.isclose(bot_right_2[0],bot_left_1[0],abs_tol=20) and \
-                                  math.isclose(bot_right_2[1],bot_left_1[1],abs_tol=20) and i!=j):
+                                if(math.isclose(bot_right_2[0],bot_left_1[0],abs_tol=35) and \
+                                  math.isclose(bot_right_2[1],bot_left_1[1],abs_tol=35) and i!=j):
                                     app = True
                                     for en in x:
                                         if([j,i] in x):
@@ -49,8 +80,8 @@ def main(keywords,bboxes,centers):
                                         new_centers.append(centers[i])
                                         x.append([j,i])
                                 # is box 2 close to box 1 on right side of 1
-                                if(math.isclose(bot_right_1[0],bot_left_2[0],abs_tol=20) and \
-                                  math.isclose(bot_right_1[1],bot_left_2[1],abs_tol=20) and i!=j):
+                                if(math.isclose(bot_right_1[0],bot_left_2[0],abs_tol=35) and \
+                                  math.isclose(bot_right_1[1],bot_left_2[1],abs_tol=35) and i!=j):
                                     app = True
                                     for en in x:
                                         if([i,j] in x):
@@ -73,7 +104,7 @@ def main(keywords,bboxes,centers):
                                     new_keywords.append(keywords[i])
                                     new_bboxes.append(bboxes[i])
                                     new_centers.append(centers[i])
-                if(tnow<=3600):
+                if(tnow<=300):
                     success = True
                     done=True
                     print('MergeKeys Successful, Time =  ',(time.time() - tz))

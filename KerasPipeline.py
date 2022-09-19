@@ -1,3 +1,32 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+extract text from tiles
+
+Args:
+tiled imagery [n,m,3,N], N images
+top left position on image
+bottom right position in image
+
+Out:
+keywords,
+centers,
+bboxes
+"""
+
 import os
 import numpy as np
 import cv2

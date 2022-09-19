@@ -1,3 +1,23 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+Fuse together all (non-)completed .csv files for DARPA submission
+
+"""
+
 from tqdm import tqdm
 import os
 import pandas as pd

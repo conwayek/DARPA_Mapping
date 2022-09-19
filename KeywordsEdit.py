@@ -1,3 +1,36 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+Accounts for irregularities in Keras-OCR text
+
+Args:
+keywords,
+centers,
+bboxes,
+clue_lon,
+clue_lat
+
+Out:
+keywords,
+centers,
+bboxes
+
+
+"""
+
 def main(keywords,centers,bboxes,clue_x,clue_y):
     
             for i in range(len(keywords)):
@@ -135,6 +168,10 @@ def main(keywords,centers,bboxes,clue_x,clue_y):
                         tot_num_centers.append(centers[i])
                         tot_num_boxes.append(bboxes[i])
                     elif(word[1:].isdigit()):
+                        tot_numbers.append(word[1:])
+                        tot_num_centers.append(centers[i])
+                        tot_num_boxes.append(bboxes[i])
+                    elif(word[0:2].isdigit()):
                         tot_numbers.append(word[1:])
                         tot_num_centers.append(centers[i])
                         tot_num_boxes.append(bboxes[i])

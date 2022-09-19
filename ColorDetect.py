@@ -1,3 +1,29 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Args:
+Paths to an image
+
+Out:
+wheter a bounding region was found
+map mask
+bounds to a map
+
+
+"""
+
 import numpy as np
 import os
 import cv2

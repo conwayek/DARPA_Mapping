@@ -1,3 +1,32 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+To georeference an image that contains a map
+
+Args:
+image name,
+its directory,
+clue directory,
+result output directory
+
+Out:
+csv file with georeferenced points
+
+
+"""
 import json
 import numpy as np
 import os
@@ -57,10 +86,10 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     
     space=0
-    failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
+    #failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
     #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0095_Mask.txt',delimiter=',')
-    print(bounds)
-    #failure = True
+    #print(bounds)
+    failure = True
     redo = False
     if(failure==True):
         bounds = np.array([np.nan,np.nan,np.nan,np.nan])
@@ -85,6 +114,100 @@ def main(image_dir,image_path,out_dir,clue_dir):
             keywords,bboxes,centers = KerasPipeline.main(tile,tl,br)  
             keywords,bboxes,centers = MergeKeys.main(keywords,bboxes,centers)
             #----------------------------------#
+            # find the scale
+            scale_found=False
+            for key in keywords:
+                if('scale' in key and scale_found==False):
+                    scale = key.split('scale')[1]
+                    if(scale[0:2]=='11'):
+                        print('Found scale.... -> ',scale)
+                        scale_num = scale[2:]
+                        if(scale_num[0:2]=='20' and len(scale_num)<=4):
+                            scale=20000
+                            scale_found=True 
+                            tol=0.2
+                            mpix_max = 3
+                            mpix_min = 0.1
+                        if(scale_num[0:2]=='20' and len(scale_num)<=5):
+                            scale=20000
+                            scale_found=True 
+                            tol=0.2
+                            mpix_max = 3
+                            mpix_min = 0.1
+                        if(scale_num[0:2]=='24' and len(scale_num)<=5):
+                            scale=24000
+                            scale_found=True
+                            tol = 0.2
+                            mpix_max = 3
+                            mpix_min = 0.1
+                        if(scale_num[0:2]=='25' and len(scale_num)<=5):
+                            scale=25000
+                            scale_found=True
+                            tol = 0.2
+                            mpix_max = 3
+                            mpix_min = 0.1
+                        if(scale_num[0:2]=='50' and len(scale_num)<=5):
+                            scale=50000
+                            scale_found=True 
+                            tol=0.5
+                            mpix_max = 8
+                            mpix_min = 3
+                        if(scale_num[0:2]=='62' and len(scale_num)<=5):
+                            scale=62000
+                            scale_found=True 
+                            tol=0.3
+                            mpix_max = 10
+                            mpix_min = 3
+                        if(scale_num[0:2]=='63' and len(scale_num)<=5):
+                            scale=63000
+                            scale_found=True
+                            tol = 0.3
+                            mpix_max = 10
+                            mpix_min = 3
+                        if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
+                            if(len(scale)==6):
+                                scale=100000
+                                scale_found=True   
+                                tol=1.5
+                                mpix_max = 15
+                                mpix_min = 5
+                        if(scale_num[0:3]=='125' and len(scale_num)>=6):
+                            scale=125000
+                            scale_found=True
+                            tol = 0.5
+                            mpix_max = 19
+                            mpix_min = 6
+                        if(scale_num[0:3]=='250' or scale_num[0:3]=='25o'):
+                            if(len(scale)>=6):
+                                scale=250000
+                                scale_found=True
+                                tol=3
+                                mpix_max = 35
+                                mpix_min = 12
+                        if(scale_num[0:3]=='500' or scale_num[0:3]=='5oo'):
+                            if(len(scale)>=6):
+                                scale=500000
+                                scale_found=True 
+                                tol=3
+                                mpix_max = 60 
+                                mpix_min = 30
+                        if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
+                            if(len(scale)>=7):
+                                scale=1000000
+                                scale_found=True  
+                                tol=4
+                                mpix_max = 120
+                                mpix_min = 60
+            if(scale_found==True):
+                print('Scale = ',scale)
+            else:
+                print('Scale = ',scale_found)
+            #----------------------------------#
+            #scale=24000
+            #mpix_min=0.1
+            #mpix_max=3
+            #scale_found=True
+            #tol=0.2
 
             """
             with rasterio.open(os.path.join(image_dir,image_path)) as f:
@@ -123,7 +246,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     exit()
 
             #----------------------------------#
-            print(keywords)
+            #print(keywords)
             tot_numbers,tot_num_centers,tot_num_boxes = KeywordsEdit.main(keywords,centers,bboxes,clue_x,clue_y)
 
             print(tot_numbers)
@@ -148,13 +271,20 @@ def main(image_dir,image_path,out_dir,clue_dir):
             lat=[]
             clon = []
             clat = []
+            
+            if(scale_found==False):
+                tol=3
+                mpix_max = 30
+                mpix_min = 1
+            
+            
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_x,abs_tol=2)):     
+                if(math.isclose(final_numbers[i],clue_x,abs_tol=tol)):     
                     lon.append(final_numbers[i])
                     clon.append(final_num_centers[i])
 
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_y,abs_tol=2)):     
+                if(math.isclose(final_numbers[i],clue_y,abs_tol=tol)):     
                     lat.append(final_numbers[i])
                     clat.append(final_num_centers[i])
 
@@ -173,7 +303,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
 
             #----------------------------------#
             print(bounds)
-            lat3d,lon3d = PairMatching.main(lat,clat,lon,clon,img.shape,clue_x,clue_y,bounds)
+            lat3d,lon3d = PairMatching.main(lat,clat,lon,clon,img.shape,clue_x,clue_y,bounds,mpix_max,mpix_min)
               
             print('lat 3',lat3d)
 
