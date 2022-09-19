@@ -59,7 +59,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
     space=0
     failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
     #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0095_Mask.txt',delimiter=',')
-    #print(bounds)
+    print(bounds)
     #failure = True
     redo = False
     if(failure==True):
@@ -123,6 +123,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     exit()
 
             #----------------------------------#
+            print(keywords)
             tot_numbers,tot_num_centers,tot_num_boxes = KeywordsEdit.main(keywords,centers,bboxes,clue_x,clue_y)
 
             print(tot_numbers)
@@ -180,13 +181,15 @@ def main(image_dir,image_path,out_dir,clue_dir):
             
             #----------------------------------# 
             if(redo==False):
-                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo)
+                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
+lon,lat,clon,clat)
                 if(np.isfinite(np.sum(bounds))==False):
                     done=True
                 if(redo==False):
                     done=True
             elif(redo==True):
-                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo)
+                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
+lon,lat,clon,clat)
                 done=True
                 
             

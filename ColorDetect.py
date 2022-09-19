@@ -97,7 +97,12 @@ def main(image_dir,out_dir,image_path,width=0):
     xsec_xg = xsec_x[:,:,1]
     xsec_xb = xsec_x[:,:,2]
 
-    
+    if(meanr  < 230):
+        meanr = 230     
+    if(meang  < 230):
+        meang = 230     
+    if(meanb  < 230):
+        meanb = 230     
     
     ipr = np.logical_and(xsec_xr.flatten()<meanr-5,xsec_xr.flatten()>10)
     x = xsec_xr.flatten()
