@@ -14,9 +14,10 @@ Date:
 DARPA Critical Mineral Challenge 2022
 *************
 
-The model is desgined to be used by either a CPU or GPU system, however, the GPU implemenation is much faster, notably in the Keras-OCR procedure. The model is entirely automated and only requires the paths to an image directory, the image name, where the clue directory is located, and the directpry where we wish to send the results. 
+The model is designed to be used by either a CPU or GPU system, however, the GPU implemenation is much faster, notably in the Keras-OCR procedure. 
+The model is entirely automated and only requires the paths to an image directory, the image name, where the clue directory is located, and the directory where we wish to send the results. 
 
-To run the model, ensure the following codes are in the same directory:
+To run the model, ensure the following codes are all in the same directory:
 
 DARPA_Color.py
 PairMatching.py
@@ -28,6 +29,13 @@ MergeKeys.py
 MergeResults.py
 Tiling.py
 
-The folowing command will run the model on GEO_0002.tif
+After downloading the following:
+validation,
+validation clues,
+training,
+training clues,
+we can run the folowing command on file GEO_0002.tif, which is in the validation set of imagery.
 
-python3 DARPA_Color.py /path/to/results_dir/ /path/to/imagery_dir/ GEO_0002.tif /path/to/clues_dir/
+python3 DARPA_Color.py /path/to/validation_results_dir/ /path/to/validation_imagery_dir/ GEO_0002.tif /path/to/validation_clues_dir/
+
+
