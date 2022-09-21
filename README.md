@@ -10,6 +10,10 @@ Read 'InstallInstructions.txt' on how to install an appropriate anaconda environ
 wget https://map-georeferencing-training-validation.s3.amazonaws.com/Training.tar.gz
 
 tar -xvf Training.tar.gz
+
+### Example Clues for Training
+tar -xvf CluesTesting.tar
+
 ### Validation Data
 wget https://map-georeferencing-training-validation.s3.amazonaws.com/Validation.tar.gz
 
