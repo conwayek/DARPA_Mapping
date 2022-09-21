@@ -37,7 +37,7 @@ out:
 a csv file with georeferenced results in it.
 
 """
-
+import math
 import os
 import numpy as np
 from scipy.optimize import curve_fit
@@ -113,87 +113,90 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 deltay1 = 1e5 * (lat_max - lat_min) /img_shape[0] 
                 deltax1 = 1e5 * (lon_max - lon_min) /img_shape[1] 
                 print('meter per pixel y,x = ',deltay1,deltax1)
-                print(abs(deltax1/deltay1) , abs(deltax1/deltay1))
+                print(abs(deltay1/deltax1) ,abs(lat_max - lat_min)/abs(lon_max - lon_min)  )
                 if(abs(deltax1/deltay1)>1.2 or abs(deltax1/deltay1)<0.8 or abs(deltax1)<1.5 or abs(deltay1)<1.5 \
                   or abs(deltax1)>25 or abs(deltay1)>25):
-                    print('Large dispersion.....checking x points against y fit')
-                    # try fit x points using y fit
-                    dist = np.zeros(2)
-                    dist[0] = abs(abs(clue_x) - abs(lon3d[2,0]))
-                    dist[1] = abs(abs(clue_x) - abs(lon3d[2,1]))
-                    poptx1=popty.copy()
-                    poptx1[0] = -poptx1[0]
-                    # pick best x point i.e. the one closest to our key point
-                    if(dist[0]<dist[1]):
-                        print('Best Lon = ',lon3d[2,0]) 
-                        c = lon3d[2,0] - poptx1[0]*lon3d[1,0]
-                        poptx1[1] = c
-                    else:
-                        print('Best Lon = ',lon3d[2,1]) 
-                        c = lon3d[2,1] - poptx1[0]*lon3d[1,1]
-                        poptx1[1] = c
-                    X = np.linspace(0,img_shape[1]-1,img_shape[1])
-                    Y = lin_line(X,*poptx1)
-                        
-                    lon_max = Y[-1]
-                    lon_min = Y[0]
-                    deltax2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
-                    
-                    if(abs(deltay1 / deltax2) < 1.2 and abs(deltay1/deltax2)>0.8 and (lon_max-lon_min)<3 \
-                      and abs(deltax2)>1.5 and abs(deltax2)<25):
-                        fitx2=True
-                    else: 
-                        fitx2=False
-                    print('Lon point check with Y fit: ',fitx2)
-                    print('Delta y1, x2 = ',deltay1,deltax2) 
-
-
-                    print('Large dispersion.....checking y points against X fit')
-                    # we have 2 numbers, need to pick closest to clue y
-                    dist = np.zeros(2)
-                    dist[0] = abs(abs(clue_y) - abs(lat3d[2,0]))
-                    dist[1] = abs(abs(clue_y) - abs(lat3d[2,1]))
-                    if(dist[0]<dist[1]):
-                        print('Best Lat = ',lat3d[2,0]) 
-                        popty1=poptx.copy()
-                        popty1[0] = -popty1[0]
-                        c = lat3d[2,0] - popty1[0]*lat3d[0,0]
-                        popty1[1] = c
-                    else:
-                        print('Best Lat = ',lat3d[2,1]) 
-                        popty1=poptx.copy()
-                        popty1[0] = -popty1[0]
-                        c = lat3d[2,1] - popty1[0]*lat3d[0,1]
-                        popty1[1] = c
-                    X = np.linspace(0,img_shape[0]-1,img_shape[0])
-                    Y = lin_line(X,*popty1)
-                        
-                    lat_min = Y[-1]
-                    lat_max = Y[0]
-                    deltay2 = 1e5 * (lat_max - lat_min) /img_shape[0] 
-                    if(abs(deltax1 / deltay2) < 1.2 and abs(deltax1 / deltay2) > 0.8 and (lat_max-lat_min)<3 \
-                      and abs(deltay2)>1.5 and abs(deltay2)<25):
-                        fity2=True
-                    else: 
-                        fity2=False
-                    print('Lat point check with X fit: ',fity2)
-                    print('Delta y2, x1 = ',deltay2,deltax1) 
-
-                    if(fitx2 == True and fity2==True): 
-                        # use x1 and y2 fits
-                        if(abs(deltax1 - deltay2) < abs(deltay1 - deltax2)):
-                            print('Using X fit with y points')
-                            fity_own = False
-                        # use y1 and x2 fits
+                    if( math.isclose((abs(lat_max - lat_min)/abs(lon_max - lon_min)  ),abs(deltay1/deltax1)  ,\
+                                     abs_tol=0.25*min(abs(deltay1/deltax1),(abs(lat_max - lat_min)/abs(lon_max - lon_min)  )) )==False \
+                       or abs(abs(lat_max - lat_min)/abs(lon_max - lon_min)  ) < 0.3 or abs(abs(lat_max - lat_min)/abs(lon_max - lon_min)  ) > 3):
+                        print('Large dispersion.....checking x points against y fit')
+                        # try fit x points using y fit
+                        dist = np.zeros(2)
+                        dist[0] = abs(abs(clue_x) - abs(lon3d[2,0]))
+                        dist[1] = abs(abs(clue_x) - abs(lon3d[2,1]))
+                        poptx1=popty.copy()
+                        poptx1[0] = -poptx1[0]
+                        # pick best x point i.e. the one closest to our key point
+                        if(dist[0]<dist[1]):
+                            print('Best Lon = ',lon3d[2,0]) 
+                            c = lon3d[2,0] - poptx1[0]*lon3d[1,0]
+                            poptx1[1] = c
                         else:
+                            print('Best Lon = ',lon3d[2,1]) 
+                            c = lon3d[2,1] - poptx1[0]*lon3d[1,1]
+                            poptx1[1] = c
+                        X = np.linspace(0,img_shape[1]-1,img_shape[1])
+                        Y = lin_line(X,*poptx1)
+
+                        lon_max = Y[-1]
+                        lon_min = Y[0]
+                        deltax2 = 1e5 * (lon_max - lon_min) /img_shape[1] 
+
+                        if(abs(deltay1 / deltax2) < 1.2 and abs(deltay1/deltax2)>0.8 and (lon_max-lon_min)<3 \
+                          and abs(deltax2)>1.5 and abs(deltax2)<25):
+                            fitx2=True
+                        else: 
+                            fitx2=False
+                        print('Lon point check with Y fit: ',fitx2)
+                        print('Delta y1, x2 = ',deltay1,deltax2) 
+
+
+                        print('Large dispersion.....checking y points against X fit')
+                        # we have 2 numbers, need to pick closest to clue y
+                        dist = np.zeros(2)
+                        dist[0] = abs(abs(clue_y) - abs(lat3d[2,0]))
+                        dist[1] = abs(abs(clue_y) - abs(lat3d[2,1]))
+                        if(dist[0]<dist[1]):
+                            print('Best Lat = ',lat3d[2,0]) 
+                            popty1=poptx.copy()
+                            popty1[0] = -popty1[0]
+                            c = lat3d[2,0] - popty1[0]*lat3d[0,0]
+                            popty1[1] = c
+                        else:
+                            print('Best Lat = ',lat3d[2,1]) 
+                            popty1=poptx.copy()
+                            popty1[0] = -popty1[0]
+                            c = lat3d[2,1] - popty1[0]*lat3d[0,1]
+                            popty1[1] = c
+                        X = np.linspace(0,img_shape[0]-1,img_shape[0])
+                        Y = lin_line(X,*popty1)
+
+                        lat_min = Y[-1]
+                        lat_max = Y[0]
+                        deltay2 = 1e5 * (lat_max - lat_min) /img_shape[0] 
+                        if(abs(deltax1 / deltay2) < 1.2 and abs(deltax1 / deltay2) > 0.8 and (lat_max-lat_min)<3 \
+                          and abs(deltay2)>1.5 and abs(deltay2)<25):
+                            fity2=True
+                        else: 
+                            fity2=False
+                        print('Lat point check with X fit: ',fity2)
+                        print('Delta y2, x1 = ',deltay2,deltax1) 
+
+                        if(fitx2 == True and fity2==True): 
+                            # use x1 and y2 fits
+                            if(abs(deltax1 - deltay2) < abs(deltay1 - deltax2)):
+                                print('Using X fit with y points')
+                                fity_own = False
+                            # use y1 and x2 fits
+                            else:
+                                print('Using Y fit with x points')
+                                fitx_own = False
+                        elif(fity2 == False and fitx2==True):
                             print('Using Y fit with x points')
-                            fitx_own = False
-                    elif(fity2 == False and fitx2==True):
-                        print('Using Y fit with x points')
-                        fitx_own = False 
-                    elif(fitx2 == False and fity2==True):
-                        print('Using X fit with y points')
-                        fity_own = False 
+                            fitx_own = False 
+                        elif(fitx2 == False and fity2==True):
+                            print('Using X fit with y points')
+                            fity_own = False 
 
             # failed to fitx but fitted y, so copy y
             if(fitx_own==False and fity_own==True and lon3d.shape[1]==2):
@@ -382,20 +385,20 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                             print('New Lat3d Right ', lat3d)
                             done=True
                     
-                    poptx=popty.copy()
-                    poptx[0] = -poptx[0]
-                    c = lon3d[2,0] - poptx[0]*lon3d[1,0]
-                    poptx[1] = c
-                    fitx_help=True
-                    X = np.linspace(0,img_shape[1]-1,img_shape[1])
-                    Y = lin_line(X,*poptx)
+                    popty=poptx.copy()
+                    popty[0] = -popty[0]
+                    c = lat3d[2,0] - popty[0]*lat3d[0,0]
+                    popty[1] = c
+                    fity_help=True
+                    X = np.linspace(0,img_shape[0]-1,img_shape[0])
+                    Y = lin_line(X,*popty)
 
-                    lon_max = Y[-1]
-                    lon_min = Y[0]
-                    print('lon max/min help = ',lon_max,lon_min)
-                    if(lon_max - lon_min > 3.5):
-                        fitx_help=False
-                        fitx_global=True                    
+                    lat_min = Y[-1]
+                    lat_max = Y[0]
+                    print('lat max/min help = ',lat_max,lat_min)
+                    if(lat_max - lat_min > 3.5):
+                        fity_help=False
+                        fity_global=True                    
 
                     """
                     popty=poptx.copy()
@@ -529,3 +532,4 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                           fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
             return False 
+

@@ -170,7 +170,5 @@ if __name__=="__main__":
     with rasterio.open(file,'r') as f:
         img = f.read()
     img = img.transpose((1,2,0))
-    
-    bounds = np.genfromtxt(os.path.join('/scratch/e.conway/DARPA_MAPS/Results/',\
-                                        image_path.split('.tif')[0]+'_Mask.txt'),delimiter=',')
-    tile = main(bounds,)
+
+    tl,br,tiles = tileall(img)

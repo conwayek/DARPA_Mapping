@@ -36,6 +36,7 @@ best pair of lat plus pixel location
 
 import numpy as np
 from scipy.optimize import curve_fit
+import rasterio
 
 
 def lin_line(x, A, B): 
@@ -479,7 +480,7 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min):
                 if(len(stored_dist_y_ur[0])>1):
                     print(stored_dist_y_ur)
                     arr = np.array([stored_dist_y_ul[0][0],stored_dist_y_ur[0][0],stored_dist_y_lr[0][0],stored_dist_y_ll[0][0]],dtype=np.float64)
-                    arr_indx = np.array([stored_indx_y_ul[0][0],stored_indx_y_ur[0][0],stored_indx_y_lr[0][0],stored_indx_y_ll[0][0]],dtype=np.float64)
+                    arr_indx = np.array([stored_indx_y_ul[0][0],stored_indx_y_ur[0][0],stored_indx_y_lr[0][0],stored_indx_y_ll[0][0]],dtype=int)
                     #print(arr)
                     #print(arr_indx)
                     best_lat = np.min(arr)
@@ -487,9 +488,9 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min):
                     idx = int(np.where(arr==best_lat)[0])
                     #print(idx)
                     lat3d=np.zeros((3,1))
-                    lat3d[2,0] = dup_lat_final[0][idx]
-                    lat3d[1,0] = dup_lat_final_cen[0][idx][0]
-                    lat3d[0,0] = dup_lat_final_cen[0][idx][1]
+                    lat3d[2,0] = dup_lat_final[0][arr_indx[idx]]
+                    lat3d[1,0] = dup_lat_final_cen[0][arr_indx[idx]][0]
+                    lat3d[0,0] = dup_lat_final_cen[0][arr_indx[idx]][1]
                 else:
                     lat3d=np.zeros((3,1))
                     lat3d[2,0] = dup_lat_final[0][0]
@@ -662,19 +663,14 @@ def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min):
                 #here, we only have one set of lons, all possibly duplicated
                 # we need to pick the one that is closest to a corner
                 if(len(stored_dist_x_ur[0])>1):
-                    print(stored_dist_x_ur)
                     arr = np.array([stored_dist_x_ul[0][0],stored_dist_x_ur[0][0],stored_dist_x_lr[0][0],stored_dist_x_ll[0][0]],dtype=np.float64)
-                    arr_indx = np.array([stored_indx_x_ul[0][0],stored_indx_x_ur[0][0],stored_indx_x_lr[0][0],stored_indx_x_ll[0][0]],dtype=np.float64)
-                    #print(arr)
-                    #print(arr_indx)
+                    arr_indx = np.array([stored_indx_x_ul[0][0],stored_indx_x_ur[0][0],stored_indx_x_lr[0][0],stored_indx_x_ll[0][0]],dtype=int)
                     best_lon = np.min(arr)
-                    #print(best_lon)
                     idx = int(np.where(arr==best_lon)[0])
-                    #print(idx)
                     lon3d=np.zeros((3,1))
-                    lon3d[2,0] = dup_lon_final[0][idx]
-                    lon3d[1,0] = dup_lon_final_cen[0][idx][0]
-                    lon3d[0,0] = dup_lon_final_cen[0][idx][1]
+                    lon3d[2,0] = dup_lon_final[0][arr_indx[idx]]
+                    lon3d[1,0] = dup_lon_final_cen[0][arr_indx[idx]][0]
+                    lon3d[0,0] = dup_lon_final_cen[0][arr_indx[idx]][1]
                 else:
                     lon3d=np.zeros((3,1))
                     lon3d[2,0] = dup_lon_final[0][0]
@@ -691,15 +687,20 @@ if __name__=="__main__":
     with rasterio.open(file,'r') as f:
         data=f.read()
     data = data.transpose((1,2,0))
-    lon = [-120,-119]  
-    lat = [40,39]
+    img_shape = data.shape
+    lon = np.array([-120,-119],dtype=np.float64)
+    lat = np.array([40,39],dtype=np.float64)
     clue_x = -120
     clue_y = 39  
-    clon = [[10,20],[3000,4000]]
-    clat = [[10,20],[3000,4000]]
+    clon = np.array([[10,20],[4000,4010]],dtype=np.float64)
+    clat = np.array([[10,20],[4000,4010]],dtype=np.float64)
+    mpix_max=5
+    mpix_min=1
     bounds = [np.nan,np.nan,np.nan,np.nan]
+    
+    lat3d,lon3d = main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min)
 
-
-            
+    print(lat3d)
+    print(lon3d)
             
             

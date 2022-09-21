@@ -86,17 +86,17 @@ def main(image_dir,image_path,out_dir,clue_dir):
     
     
     space=0
-    #failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
+    failure,mask,bounds = ColorDetect.main(image_dir,out_dir,image_path,width=space)
     #bounds = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/Results/GEO_0095_Mask.txt',delimiter=',')
-    #print(bounds)
-    failure = True
+    print(bounds)
+    #failure = True
     redo = False
     if(failure==True):
         bounds = np.array([np.nan,np.nan,np.nan,np.nan])
         redo=True
     done=False        
     try:
-        #test_routine=True
+        test_routine=True
         #while test_routine == True:
         while done == False:
             if(redo==True):
@@ -117,89 +117,107 @@ def main(image_dir,image_path,out_dir,clue_dir):
             # find the scale
             scale_found=False
             for key in keywords:
-                if('scale' in key and scale_found==False):
-                    scale = key.split('scale')[1]
-                    if(scale[0:2]=='11'):
-                        print('Found scale.... -> ',scale)
-                        scale_num = scale[2:]
-                        if(scale_num[0:2]=='20' and len(scale_num)<=4):
-                            scale=20000
-                            scale_found=True 
-                            tol=0.2
-                            mpix_max = 3
-                            mpix_min = 0.1
-                        if(scale_num[0:2]=='20' and len(scale_num)<=5):
-                            scale=20000
-                            scale_found=True 
-                            tol=0.2
-                            mpix_max = 3
-                            mpix_min = 0.1
-                        if(scale_num[0:2]=='24' and len(scale_num)<=5):
-                            scale=24000
-                            scale_found=True
-                            tol = 0.2
-                            mpix_max = 3
-                            mpix_min = 0.1
-                        if(scale_num[0:2]=='25' and len(scale_num)<=5):
-                            scale=25000
-                            scale_found=True
-                            tol = 0.2
-                            mpix_max = 3
-                            mpix_min = 0.1
-                        if(scale_num[0:2]=='50' and len(scale_num)<=5):
-                            scale=50000
-                            scale_found=True 
-                            tol=0.5
-                            mpix_max = 8
-                            mpix_min = 3
-                        if(scale_num[0:2]=='62' and len(scale_num)<=5):
-                            scale=62000
-                            scale_found=True 
-                            tol=0.3
-                            mpix_max = 10
-                            mpix_min = 3
-                        if(scale_num[0:2]=='63' and len(scale_num)<=5):
-                            scale=63000
-                            scale_found=True
-                            tol = 0.3
-                            mpix_max = 10
-                            mpix_min = 3
-                        if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
-                            if(len(scale)==6):
-                                scale=100000
-                                scale_found=True   
-                                tol=1.5
-                                mpix_max = 15
-                                mpix_min = 5
-                        if(scale_num[0:3]=='125' and len(scale_num)>=6):
-                            scale=125000
-                            scale_found=True
-                            tol = 0.5
-                            mpix_max = 19
-                            mpix_min = 6
-                        if(scale_num[0:3]=='250' or scale_num[0:3]=='25o'):
-                            if(len(scale)>=6):
-                                scale=250000
-                                scale_found=True
-                                tol=3
-                                mpix_max = 35
-                                mpix_min = 12
-                        if(scale_num[0:3]=='500' or scale_num[0:3]=='5oo'):
-                            if(len(scale)>=6):
-                                scale=500000
+                if('scale' in key or 'scal' in key):
+                    if(scale_found==False):
+                        if('scale' in key):
+                            scale = key.split('scale')[1]
+                        else:
+                            scale = key.split('scal')[1]
+                        if(scale[0:2]=='11' or scale[0:2]=='12'):
+                            print('Found scale.... -> ',scale)
+                            if(len(scale)>=4):
+                                scale_num = scale[1:]
+                            elif(len(scale)==3):
+                                scale_num = scale[0:2]
+                            elif(len(scale)==2):
+                                scale_num = scale[0:2]
+                            if(scale_num[0:2]=='12' or scale_num[0]=='2' or scale_num[0:2]=='11'):
+                                if( len(scale_num)<=4 and scale_found==True):
+                                    scale=12000
+                                    scale_found=True 
+                                    tol=0.2
+                                    mpix_max = 3
+                                    mpix_min = 0.1
+                            if(scale_num[0:2]=='20' and len(scale_num)<=4 and scale_found==True):
+                                scale=20000
                                 scale_found=True 
-                                tol=3
-                                mpix_max = 60 
-                                mpix_min = 30
-                        if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
-                            if(len(scale)>=7):
-                                scale=1000000
-                                scale_found=True  
-                                tol=4
-                                mpix_max = 120
-                                mpix_min = 60
+                                tol=0.2
+                                mpix_max = 3
+                                mpix_min = 0.1
+                            if(scale_num[0:2]=='20' and len(scale_num)<=5 and scale_found==True):
+                                scale=20000
+                                scale_found=True 
+                                tol=0.2
+                                mpix_max = 3
+                                mpix_min = 0.1
+                            if(scale_num[0:2]=='24' and len(scale_num)<=5 and scale_found==True):
+                                scale=24000
+                                scale_found=True
+                                tol = 0.2
+                                mpix_max = 3
+                                mpix_min = 0.1
+                            if(scale_num[0:2]=='25' and len(scale_num)<=5 and scale_found==True):
+                                scale=25000
+                                scale_found=True
+                                tol = 0.2
+                                mpix_max = 3
+                                mpix_min = 0.1
+                            if(scale_num[0:2]=='50' and len(scale_num)<=5 and scale_found==True):
+                                scale=50000
+                                scale_found=True 
+                                tol=0.5
+                                mpix_max = 8
+                                mpix_min = 3
+                            if(scale_num[0:2]=='62' and len(scale_num)<=5 and scale_found==True):
+                                scale=62000
+                                scale_found=True 
+                                tol=0.3
+                                mpix_max = 10
+                                mpix_min = 3
+                            if(scale_num[0:2]=='63' and len(scale_num)<=5 and scale_found==True):
+                                scale=63000
+                                scale_found=True
+                                tol = 0.3
+                                mpix_max = 10
+                                mpix_min = 3
+                            if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
+                                if(len(scale_num)==6 and scale_found==True):
+                                    scale=100000
+                                    scale_found=True   
+                                    tol=1.5
+                                    mpix_max = 15
+                                    mpix_min = 5
+                            if(scale_num[0:3]=='125' and len(scale_num)>=6 and scale_found==True):
+                                scale=125000
+                                scale_found=True
+                                tol = 0.5
+                                mpix_max = 19
+                                mpix_min = 6
+                            if(scale_num[0:3]=='250' or scale_num[0:3]=='260' or scale_num[0:3]=='25o'):
+                                if(len(scale)>=6 and scale_found==True):
+                                    scale=250000
+                                    scale_found=True
+                                    tol=3
+                                    mpix_max = 35
+                                    mpix_min = 12
+                            if(scale_num[0:3]=='500' or scale_num[0:3]=='5oo'):
+                                if(len(scale)>=6 and scale_found==True):
+                                    scale=500000
+                                    scale_found=True 
+                                    tol=3
+                                    mpix_max = 60 
+                                    mpix_min = 30
+                            if(scale_num[0:3]=='100' or scale_num[0:3]=='1oo'):
+                                if(len(scale)>=7 and scale_found==True):
+                                    scale=1000000
+                                    scale_found=True  
+                                    tol=4
+                                    mpix_max = 120
+                                    mpix_min = 60
             if(scale_found==True):
                 print('Scale = ',scale)
+                print('MaxPix = ',mpix_max)
+                print('MinPix = ',mpix_min)
             else:
                 print('Scale = ',scale_found)
             #----------------------------------#
@@ -246,7 +264,7 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     exit()
 
             #----------------------------------#
-            #print(keywords)
+            print(keywords)
             tot_numbers,tot_num_centers,tot_num_boxes = KeywordsEdit.main(keywords,centers,bboxes,clue_x,clue_y)
 
             print(tot_numbers)

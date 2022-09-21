@@ -519,8 +519,8 @@ if __name__=="__main__":
     out_dir = '/scratch/e.conway/DARPA_MAPS/ValidationResults/'
     ret_fail,mask,bounds = main(image_dir,out_dir,image_path)
     
-    out = image_path.split('.tif')[0]+'_Mask.txt'
-    np.savetxt(out,mask)
+    #out = image_path.split('.tif')[0]+'_Mask.txt'
+    #np.savetxt(out,mask)
     
     #fig = plt.figure()
     #plt.imshow(mask)

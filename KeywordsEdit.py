@@ -70,7 +70,7 @@ def main(keywords,centers,bboxes,clue_x,clue_y):
                 add_8 = True
             else:
                 add_8=False
-            print(add_3,add_5,add_8)
+            #print(add_3,add_5,add_8)
 
 
 
@@ -264,9 +264,13 @@ def main(keywords,centers,bboxes,clue_x,clue_y):
 
 
 if __name__=="__main__":
+    keywords = ['9o45','912oo']
+    print('Old Keys = ',keywords)
+    centers = [[100,500],[200,600]]
+    bboxes = [[[100,500],[110,510]],[[200,600],[210,610]],[[300,700],[310,710]]]
+    clue_x = [90,91.3]
+    clue_y = [0,0]
     
-    tot_numbers = ['9045','91200']
-    tot_num_centers = [[100,500],[200,600]]
-    tot_num_boxes = [[[100,500],[110,510]],[[200,600],[210,610]],[[300,700],[310,710]]]
-    cluex = [90,91.3]
-    cluey = [0,0]
+    tot_numbers,tot_num_centers,tot_num_boxes = main(keywords,centers,bboxes,clue_x,clue_y)
+    
+    print('New Keys = ',tot_numbers)
