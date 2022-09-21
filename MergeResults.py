@@ -2,7 +2,7 @@
 Written by:
 Dr. Eamon K. Conway
 Geospatial Development Center (GDC)
-Kostas Research Institute for Homeland Securty
+Kostas Research Institute for Homeland Security
 Northeastern University
 
 Contact:
