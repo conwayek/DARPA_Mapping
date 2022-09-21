@@ -1,0 +1,33 @@
+*************
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+*************
+
+The model is desgined to be used by either a CPU or GPU system, however, the GPU implemenation is much faster, notably in the Keras-OCR procedure. The model is entirely automated and only requires the paths to an image directory, the image name, where the clue directory is located, and the directpry where we wish to send the results. 
+
+To run the model, ensure the following codes are in the same directory:
+
+DARPA_Color.py
+PairMatching.py
+WriteFile.py
+FinalNumbers2.py
+KerasPipeline.py
+KeywordsEdit.py
+MergeKeys.py
+MergeResults.py
+Tiling.py
+
+The folowing command will run the model on GEO_0002.tif
+
+python3 DARPA_Color.py /path/to/results_dir/ /path/to/imagery_dir/ GEO_0002.tif /path/to/clues_dir/

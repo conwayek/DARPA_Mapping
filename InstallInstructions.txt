@@ -1,0 +1,22 @@
+*************
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Securty
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+*************
+
+conda create -n darpa -c conda-forge python=3.9.13 rasterio=1.3.2 scipy=1.9.1 scikit-learn=1.1.2\
+tensorflow=2.9.1 tqdm=4.64.1 cudatoolkit=11.7.0 cudnn=8.4.1.50 opencv=4.6.0\
+pandas=1.4.4 numpy=1.23.2 pip=22.2.2
+#tensorflow-gpu=2.10.0
+
+pip install keras-ocr==0.9.1
