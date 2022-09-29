@@ -1,10 +1,11 @@
 # DARPA_Mapping
 DARPA Mapping Challenge 2022
+
 https://criticalminerals.darpa.mil/The-Competition
 
 ## Install Instructions
 Read 'InstallInstructions.txt' on how to install the appropriate anaconda environment with the necessary packages.
-Also included is the version of Keras-OCR required to operate the software. 
+Also included is the version of Keras-OCR required to operate the software, installed via pip. 
 
 ## Data Repos
 ### Training Data
