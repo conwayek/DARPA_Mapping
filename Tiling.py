@@ -30,7 +30,7 @@ tile
 import numpy as np
 
 def tileall(img):
-            nres=750
+            nres=500
 
             nalf = int(nres*0.5)
 
