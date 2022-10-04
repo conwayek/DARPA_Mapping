@@ -27,13 +27,14 @@ csv file with georeferenced points
 
 
 """
+import KerasPipeline
+import keras_ocr
 import json
 import numpy as np
 import os
 import cv2
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import keras_ocr
 import pandas as pd
 from sklearn.linear_model import RANSACRegressor
 from sklearn import linear_model
@@ -48,15 +49,14 @@ import FinalNumbers2 as Fnum
 import Tiling
 import KeywordsEdit
 import MergeKeys
-import PairMatching
-import WriteFile
-import KerasPipeline
+import PairMatching4
+import WriteFile2
 
 def lin_line(x, A, B): 
     return A*x + B
 
 
-def main(image_dir,image_path,out_dir,clue_dir):
+def main(image_dir,image_path,out_dir,clue_dir,keys_out_dir,cen_out_dir,box_out_dir,read_old=False):
     
     if('Training' in image_dir):
         training=True
@@ -70,12 +70,12 @@ def main(image_dir,image_path,out_dir,clue_dir):
 
 
     # get state boundaries in lon/lat
-    data = json.load(open(os.path.join(image_dir,'GeoJSONgz_2010_us_040_00_20m.json')))
-    df = pd.DataFrame(data["features"])
+    #data = json.load(open(os.path.join(image_dir,'GeoJSONgz_2010_us_040_00_20m.json')))
+    #df = pd.DataFrame(data["features"])
 
-    df['Location'] = df['properties'].apply(lambda x: x['NAME'])
-    df['Type'] = df['geometry'].apply(lambda x: x['type'])
-    df['Coordinates'] = df['geometry'].apply(lambda x: x['coordinates'])
+    #df['Location'] = df['properties'].apply(lambda x: x['NAME'])
+    #df['Type'] = df['geometry'].apply(lambda x: x['type'])
+    #df['Coordinates'] = df['geometry'].apply(lambda x: x['coordinates'])
 
 
     #img = cv2.imread(os.path.join(image_dir,image_path))
@@ -126,17 +126,49 @@ def main(image_dir,image_path,out_dir,clue_dir):
                     exit()
 
             #----------------------------------#
-            # load the mask of the map
-            if(failure==False and redo==False):
-                tl,br,tile = Tiling.main(bounds,img)
-            else:
-                tl,br,tile = Tiling.tileall(img)
 
-            keywords,bboxes,centers = KerasPipeline.main(tile,tl,br)  
+            if( os.path.exists(os.path.join(keys_out_dir,image_path.split('.tif')[0]+'.txt'))==False and \
+              os.path.exists(os.path.join(cen_out_dir,image_path.split('.tif')[0]+'.txt'))==False and \
+              os.path.exists(os.path.join(box_out_dir,image_path.split('.tif')[0]+'.txt'))==False):
+                # load the mask of the map
+                if(failure==False and redo==False):
+                    tl,br,tile = Tiling.main(bounds,img)
+                else:
+                    tl,br,tile = Tiling.tileall(img)
+                keywords,bboxes,centers = KerasPipeline.main(tile,tl,br)  
+                with open(os.path.join(keys_out_dir,image_path.split('.tif')[0]+'.txt'),'w') as f:
+                    for key in keywords:
+                        f.write(str(key)+'\n')
+                with open(os.path.join(cen_out_dir,image_path.split('.tif')[0]+'.txt'),'w') as f:
+                    for cen in centers:
+                        f.write(str(cen[0])+' '+str(cen[1])+'\n')
+                with open(os.path.join(box_out_dir,image_path.split('.tif')[0]+'.txt'),'w') as f:
+                    for box in bboxes:
+                        f.write(str(box[0][0])+' '+str(box[0][1])+' '+str(box[1][0])+' '+str(box[1][1])+'\n')
+            else:
+                with open(os.path.join(keys_out_dir,image_path.split('.tif')[0]+'.txt'),'r') as f:
+                    data = f.readlines()
+                keywords = []
+                for x in data:
+                    keywords.append(x.split('\n')[0])
+                    
+                with open(os.path.join(cen_out_dir,image_path.split('.tif')[0]+'.txt'),'r') as f:
+                    data = f.readlines()
+                centers = []
+                for x in data:
+                    centers.append([np.float64(x.split(' ')[0]),np.float64(x.split(' ')[1].split('\n')[0])])
+                    
+                with open(os.path.join(box_out_dir,image_path.split('.tif')[0]+'.txt'),'r') as f:
+                    data = f.readlines()
+                bboxes = []
+                for x in data:
+                    bboxes.append([[np.float64(x.split(' ')[0]),np.float64(x.split(' ')[1])],\
+                                       [np.float64(x.split(' ')[2]),np.float64(x.split(' ')[3].split('\n')[0])]]) 
             keywords,bboxes,centers = MergeKeys.main(keywords,bboxes,centers,clue_x,clue_y)
             #----------------------------------#
             # find the scale
             scale_found=False
+            """
             for key in keywords:
                 if('scale' in key or 'scal' in key):
                     if(scale_found==False):
@@ -241,6 +273,7 @@ and '5' not in str(scale)):
                                     tol=4
                                     mpix_max = 120
                                     mpix_min = 60
+            """
             if(scale_found==True):
                 print('Scale = ',scale)
                 print('MaxPix = ',mpix_max)
@@ -297,18 +330,19 @@ and '5' not in str(scale)):
             clat = []
             
             if(scale_found==False):
-                tol=2
-                mpix_max = 25
+                tolx=2
+                toly=1.5
+                mpix_max = 30
                 mpix_min = 0.3
             
             
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_x,abs_tol=tol)):     
+                if(math.isclose(final_numbers[i],clue_x,abs_tol=tolx)):     
                     lon.append(final_numbers[i])
                     clon.append(final_num_centers[i])
 
             for i in range(len(final_numbers)):
-                if(math.isclose(final_numbers[i],clue_y,abs_tol=tol)):     
+                if(math.isclose(final_numbers[i],clue_y,abs_tol=toly)):     
                     lat.append(final_numbers[i])
                     clat.append(final_num_centers[i])
 
@@ -327,7 +361,7 @@ and '5' not in str(scale)):
 
             #----------------------------------#
             print(bounds)
-            lat3d,lon3d = PairMatching.main(lat,clat,lon,clon,img.shape,clue_x,clue_y,bounds,mpix_max,mpix_min)
+            lat3d,lon3d = PairMatching4.main(lat,clat,lon,clon,img.shape,clue_x,clue_y,bounds,mpix_max,mpix_min)
               
             print('lat 3',lat3d)
 
@@ -335,14 +369,14 @@ and '5' not in str(scale)):
             
             #----------------------------------# 
             if(redo==False):
-                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
+                redo = WriteFile2.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
 lon,lat,clon,clat)
                 if(np.isfinite(np.sum(bounds))==False):
                     done=True
                 if(redo==False):
                     done=True
             elif(redo==True):
-                redo = WriteFile.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
+                redo = WriteFile2.main(lat3d,lon3d,training,img.shape,out_dir,image_path,image_dir,clue_x,clue_y,redo,\
 lon,lat,clon,clat)
                 done=True
                 
@@ -409,8 +443,9 @@ if __name__=="__main__":
     image_dir = sys.argv[2]
     image_path = sys.argv[3]
     clue_dir = sys.argv[4]
+    keys_out_dir = sys.argv[5]
+    cen_out_dir = sys.argv[6]
+    box_out_dir = sys.argv[7]
     
-    print(out_dir,image_dir,image_path,clue_dir)
-    
-    main(image_dir,image_path,out_dir,clue_dir)
+    main(image_dir,image_path,out_dir,clue_dir,keys_out_dir,cen_out_dir,box_out_dir)
     
