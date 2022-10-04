@@ -1,0 +1,1193 @@
+"""
+Written by:
+Dr. Eamon K. Conway
+Geospatial Development Center (GDC)
+Kostas Research Institute for Homeland Security
+Northeastern University
+
+Contact:
+e.conway@northeastern.edu
+
+Date:
+9/19/2022
+
+DARPA Critical Mineral Challenge 2022
+
+Purpose:
+To find the best pairs of coordinates
+
+Args:
+lat points
+lon points
+lat pixel coordinates
+lon pixel coordinates
+shape of image
+clue lon
+clue lat
+bounds of map
+max meter per pixel
+min meter per pixel
+
+Out:
+best pair of lon plus pixel location
+best pair of lat plus pixel location
+
+"""
+
+import numpy as np
+from scipy.optimize import curve_fit
+import rasterio
+from geopy import distance
+import math
+
+
+def lin_line(x, A, B): 
+    return A*x + B
+
+def main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min):
+            summ = np.sum(bounds)
+            if(np.isfinite(summ)==False):
+                top_left = [0,0]
+                bot_left = [img_shape[0],0]
+                bot_right = [img_shape[0],img_shape[1]]
+                top_right = [0,img_shape[1]]
+                loc_count = 0   
+                print('Failed Case') 
+            else:
+                #calculate distance to our four corners
+                top_left = [bounds[0],bounds[2]]
+                bot_left = [bounds[1],bounds[2]]
+                bot_right = [bounds[1],bounds[3]]
+                top_right = [bounds[0],bounds[3]]
+                loc_count = 1    
+            
+            
+            #create duplicate set of lats
+            dup_lats = []
+            counter=-1
+            for i in range(len(lat)):
+                if(lat[i] not in dup_lats):
+                    counter+=1
+                    dup_lats.append(lat[i])
+
+            dup_lat_final = []
+            dup_lat_final_cen = []
+            for i in range(len(dup_lats)):
+                x = []
+                y = []
+                for j in range(len(lat)):
+                    if(dup_lats[i]==lat[j]):
+                        x.append(lat[j])
+                        y.append(clat[j])
+                dup_lat_final.append(x)
+                dup_lat_final_cen.append(y)
+            print(dup_lat_final)
+            
+                    #create duplicate set of lons
+            dup_lons = []
+            counter=-1
+            for i in range(len(lon)):
+                if(lon[i] not in dup_lons):
+                    counter+=1
+                    dup_lons.append(lon[i])
+
+            dup_lon_final = []
+            dup_lon_final_cen = []
+            for i in range(len(dup_lons)):
+                x = []
+                y = []
+                for j in range(len(lon)):
+                    if(dup_lons[i]==lon[j]):
+                        x.append(lon[j])
+                        y.append(clon[j])
+                dup_lon_final.append(x)
+                dup_lon_final_cen.append(y)
+            #print(dup_lon_final_cen)
+            print(dup_lon_final)
+            # we have len(dup_lat_final_cen) sets of lats to sort through....
+            # the smallest (most negative) is first
+            
+            #----------------------------------#   
+            dist_y_top = []
+            dist_y_bot = []
+
+            dist_y_ul = []
+            dist_y_ur = []
+            dist_y_lr = []
+            dist_y_ll = []
+
+            glob_pointer = []
+            for i in range(len(dup_lat_final)):
+                y1=[]
+                y2=[]
+                yul=[]
+                yur=[]
+                ylr=[]
+                yll=[]
+                pointer = []
+                for j in range(len(dup_lat_final[i])):
+                    pos_y = dup_lat_final_cen[i][j][1]
+                    #print(dup_lat_final[i][j],dup_lat_final_cen[i][j][1],top_left[1],abs(pos_y - top_left[0]))
+                    n1 = np.linalg.norm((dup_lat_final_cen[i][j] - top_left[::-1]))
+                    n2 = np.linalg.norm((dup_lat_final_cen[i][j] - top_right[::-1]))
+                    n3 = np.linalg.norm((dup_lat_final_cen[i][j] - bot_right[::-1]))
+                    n4 = np.linalg.norm((dup_lat_final_cen[i][j] - bot_left[::-1]))
+                    print(dup_lat_final[i][j],dup_lat_final_cen[i][j],bot_right[::-1],abs(pos_y - bot_left[0]),n1,n2,n3,n4)
+                    #print(pos_y,abs(pos_y - top_left[1]))
+                    y1.append(abs(pos_y - top_left[0]))
+                    y2.append(abs(pos_y - bot_left[0]))
+                    yul.append(abs(n1))
+                    yur.append(abs(n2))
+                    ylr.append(abs(n3))
+                    yll.append(abs(n4))
+                    pointer.append(j)
+                dist_y_top.append(y1)
+                dist_y_bot.append(y2)
+                glob_pointer.append(pointer)
+                dist_y_ul.append(yul)
+                dist_y_ur.append(yur)
+                dist_y_lr.append(ylr)
+                dist_y_ll.append(yll)
+
+            # we have len(dup_lon_final_cen) sets of lons to sort through....
+            # the smallest (most negative) is first
+            dist_x_left = []
+            dist_x_right = []
+            dist_x_ul = []
+            dist_x_ur = []
+            dist_x_lr = []
+            dist_x_ll = []
+            glob_pointer_lon = []
+            for i in range(len(dup_lon_final)):
+                x1=[]
+                x2=[]
+                xul=[]
+                xur=[]
+                xlr=[]
+                xll=[]
+                pointer_x = []
+                for j in range(len(dup_lon_final[i])):
+                    pos_x = dup_lon_final_cen[i][j][0]
+                    #print(dup_lat_final_cen[i][j][1],top_left[1],abs(pos_y - top_left[1]))
+                    #print(pos_y,abs(pos_y - top_left[1]))
+                    n1 = np.linalg.norm((dup_lon_final_cen[i][j] - top_left[::-1]))
+                    n2 = np.linalg.norm((dup_lon_final_cen[i][j] - top_right[::-1]))
+                    n3 = np.linalg.norm((dup_lon_final_cen[i][j] - bot_right[::-1]))
+                    n4 = np.linalg.norm((dup_lon_final_cen[i][j] - bot_left[::-1]))
+                    print(dup_lon_final[i][j],dup_lon_final_cen[i][j],top_right[::-1],abs(pos_x - top_right[1]),n1,n2,n3,n4)
+                    x1.append(abs(pos_x - top_left[1]))
+                    x2.append(abs(pos_x - top_right[1]))
+                    xul.append(abs(n1))
+                    xur.append(abs(n2))
+                    xlr.append(abs(n3))
+                    xll.append(abs(n4))
+                    pointer_x.append(j)
+                dist_x_left.append(x1)
+                dist_x_right.append(x2)
+                glob_pointer_lon.append(pointer_x)
+                dist_x_ul.append(xul)
+                dist_x_ur.append(xur)
+                dist_x_lr.append(xlr)
+                dist_x_ll.append(xll) 
+
+
+            # sorting distances from top/bottom bounds via their distance
+            # only keep couple of results
+            stored_dist_top = []
+            stored_index_top = []
+            stored_dist_bot = []
+            stored_index_bot = []
+
+            stored_dist_y_ul = []
+            stored_dist_y_ur = []
+            stored_dist_y_lr = []
+            stored_dist_y_ll = []
+            stored_indx_y_ul = []
+            stored_indx_y_ur = []
+            stored_indx_y_lr = []
+            stored_indx_y_ll = []
+
+            for i in range(len(dist_y_bot)):
+                y2 = np.array(dist_y_bot[i],dtype=int)
+                y1 = np.array(dist_y_top[i],dtype=int)
+                g = np.array(glob_pointer[i],dtype=int)
+
+                y3=np.array(dist_y_ul[i],dtype=np.float64)
+                y4=np.array(dist_y_ur[i],dtype=np.float64)
+                y5=np.array(dist_y_lr[i],dtype=np.float64)
+                y6=np.array(dist_y_ll[i],dtype=np.float64)
+
+                idy2 = np.argsort(y2)
+                idy1 = np.argsort(y1)
+
+                idy3 = np.argsort(y3)
+                idy4 = np.argsort(y4) 
+                idy5 = np.argsort(y5)
+                idy6 = np.argsort(y6) 
+
+                y1=y1[idy1]
+                y2=y2[idy2]
+                y3=y3[idy3]
+                y4=y4[idy4]
+                y5=y5[idy5]
+                y6=y6[idy6]
+
+                g1=g[idy1]
+                g2=g[idy2]
+                g3=g[idy3]
+                g4=g[idy4]
+                g5=g[idy5]
+                g6=g[idy6]
+
+                stored_dist_top.append(y1[0:2])
+                stored_index_top.append(g1[0:2])
+                stored_dist_bot.append(y2[0:2])
+                stored_index_bot.append(g2[0:2])
+
+                stored_dist_y_ul.append(y3[0:2])
+                stored_dist_y_ur.append(y4[0:2])
+                stored_dist_y_lr.append(y5[0:2])
+                stored_dist_y_ll.append(y6[0:2])
+
+                stored_indx_y_ul.append(g3[0:2])
+                stored_indx_y_ur.append(g4[0:2])
+                stored_indx_y_lr.append(g5[0:2])
+                stored_indx_y_ll.append(g6[0:2])    
+
+
+            # sorting distances from top/bottom bounds via their distance
+            # only keep couple of results
+            stored_dist_left = []
+            stored_index_left = []
+            stored_dist_right = []
+            stored_index_right = []
+
+            stored_dist_x_ul = []
+            stored_dist_x_ur = []
+            stored_dist_x_lr = []
+            stored_dist_x_ll = []
+            stored_indx_x_ul = []
+            stored_indx_x_ur = []
+            stored_indx_x_lr = []
+            stored_indx_x_ll = []
+
+            for i in range(len(dist_x_left)):
+                x2 = np.array(dist_x_right[i],dtype=int)
+                x1 = np.array(dist_x_left[i],dtype=int)
+                x3=np.array(dist_x_ul[i],dtype=np.float64)
+                x4=np.array(dist_x_ur[i],dtype=np.float64)
+                x5=np.array(dist_x_lr[i],dtype=np.float64)
+                x6=np.array(dist_x_ll[i],dtype=np.float64)
+
+                g = np.array(glob_pointer_lon[i],dtype=int)
+
+                idx2 = np.argsort(x2)
+                idx1 = np.argsort(x1)
+                idx3 = np.argsort(x3)
+                idx4 = np.argsort(x4) 
+                idx5 = np.argsort(x5)
+                idx6 = np.argsort(x6) 
+
+                x1=x1[idx1]
+                x2=x2[idx2]
+                x3=x3[idx3]
+                x4=x4[idx4]
+                x5=x5[idx5]
+                x6=x6[idx6]  
+
+                gx1=g[idx1]
+                gx2=g[idx2]
+
+                gx3=g[idx3]
+                gx4=g[idx4]
+                gx5=g[idx5]
+                gx6=g[idx6]
+
+                stored_dist_left.append(x1[0:2])
+                stored_index_left.append(gx1[0:2])
+                stored_dist_right.append(x2[0:2])
+                stored_index_right.append(gx2[0:2])
+
+                stored_dist_x_ul.append(x3[0:2])
+                stored_dist_x_ur.append(x4[0:2])
+                stored_dist_x_lr.append(x5[0:2])
+                stored_dist_x_ll.append(x6[0:2])
+
+                stored_indx_x_ul.append(gx3[0:2])
+                stored_indx_x_ur.append(gx4[0:2])
+                stored_indx_x_lr.append(gx5[0:2])
+                stored_indx_x_ll.append(gx6[0:2])
+
+
+            # trivial solution, only two lats detected, although in different locations
+            # should calculate dist in pixels / delta lat and get approximate lat range in between bounds
+            # should be less than about 1.5 degrees as maps are not any larger...
+            # there are only 1-2 points in each
+            print('distybot ',len(dist_y_bot))
+            """
+            if(len(dist_y_bot)==2):
+                for i in range(len(stored_dist_bot[0])):
+                    bot_point = dup_lat_final_cen[0][stored_index_bot[0][i]]
+                    bot_lat = dup_lat_final[0][stored_index_bot[0][i]]
+                    for j in range(len(stored_dist_top[1])):
+                        top_point = dup_lat_final_cen[1][stored_index_top[1][j]]
+                        top_lat = dup_lat_final[1][stored_index_top[1][j]]
+                        delta_lat = top_lat - bot_lat
+                        delta_pix = bot_point[1] - top_point[1]
+                        #print(top_lat,bot_lat,delta_lat,top_point,bot_point,delta_pix)
+
+                top_point_cen = dup_lat_final_cen[1][stored_index_top[1][0]]
+                top_point_lat = dup_lat_final[1][stored_index_top[1][0]]
+                bot_point_cen = dup_lat_final_cen[0][stored_index_bot[0][0]]
+                bot_point_lat = dup_lat_final[0][stored_index_bot[0][0]]
+                delta_pix = bot_point[1] - top_point_cen[1] 
+                delta_lat = top_point_lat - bot_point_lat 
+                meter_per_pix = 1e5*delta_lat/delta_pix
+                lat3d = np.zeros((3,2))
+                lat3d[0,0] = top_point[1] ; lat3d[0,1] = bot_point[1]
+                lat3d[1,0] = top_point[0] ; lat3d[1,1] = bot_point[0]
+                lat3d[2,0] = top_point_lat; lat3d[2,1] = bot_point_lat 
+            """
+            done=False
+            min_dist_top = 1e6
+            min_dist_bot = 1e6
+            min_dist_sum = 1e6
+
+            min_dist_ul = 1e6
+            min_dist_ur = 1e6
+            min_dist_lr = 1e6
+            min_dist_ll = 1e6
+            
+            min_c_dist = 1e6
+            totel=1e6
+            #min_c_dist_lon
+            
+            arr_y_values = []
+            delta_y_values = []
+
+            print(len(dist_y_bot))
+
+            if(len(dist_y_bot)>=2 and done==False):
+                for k in range(len(stored_dist_bot)):
+                    for i in range(len(stored_dist_bot[k])):
+                        bot_point = dup_lat_final_cen[k][stored_index_bot[k][i]]
+                        bot_lat = dup_lat_final[k][stored_index_bot[k][i]]
+                        dist_bot = stored_dist_bot[k][i]
+                        #dist_ul_bot = stored_dist_y_ul[k][i]
+                        #dist_ur_bot = stored_dist_y_ur[k][i]
+                        dist_lr_bot = stored_dist_y_lr[k][i]
+                        dist_ll_bot = stored_dist_y_ll[k][i]
+                        for p in range(len(stored_dist_top)):
+                            for j in range(len(stored_dist_top[p])):
+                                #print(k,i,p,j)
+                                top_point = dup_lat_final_cen[p][stored_index_top[p][j]]
+                                top_lat = dup_lat_final[p][stored_index_top[p][j]]
+                                dist_top = stored_dist_top[p][j]
+                                dist_ul_top = stored_dist_y_ul[p][j]
+                                dist_ur_top = stored_dist_y_ur[p][j]
+                                #dist_lr_top = stored_dist_y_lr[p][j]
+                                #dist_ll_top = stored_dist_y_ll[p][j]
+                                if(np.isfinite(summ)==False):
+                                    #app = np.array([dist_ul_top,dist_ur_top,dist_top,dist_lr_bot,dist_ll_bot,dist_bot])
+                                    app = np.array([dist_top,dist_bot])
+                                else:
+                                    app = np.array([dist_ul_top,dist_ur_top,dist_lr_bot,dist_ll_bot])
+                                min_c = np.min(app)
+                                loc = np.where(min_c == app)[0]
+                                if(min_c<min_c_dist):
+                                    min_c_dist = min_c
+                                    if(loc<=loc_count):
+                                        min_c_dist_lat = top_lat
+                                        min_c_dist_cen = dup_lat_final_cen[p][stored_index_top[p][j]] #x,y format
+                                    else:
+                                        min_c_dist_lat = bot_lat
+                                        min_c_dist_cen = dup_lat_final_cen[k][stored_index_top[k][i]] #x,y format
+                                    
+                                
+                                delta_lat = top_lat - bot_lat
+                                delta_pix = bot_point[1] - top_point[1]
+                                
+                                # get approximate ratio of lon to lat for mixing slopes
+                                pt1 = (top_lat,clue_x)
+                                pt3 = (bot_lat,clue_x)
+                                dist_vert = distance.distance(pt1, pt3).m
+                                meter_per_pix = dist_vert/delta_pix
+                                
+                                
+                                arr_y_values.append([k,i,p,j])
+                                delta_y_values.append(meter_per_pix)
+            
+            
+                                print(top_lat,bot_lat,delta_lat,top_point,bot_point,\
+                                      delta_pix,dist_top,dist_bot,meter_per_pix,mpix_max,mpix_min)
+                                if(delta_pix > 0 and delta_lat > 0 and done==False and (clue_y <= (top_lat+0.05))\
+                                   and (clue_y >= (bot_lat-0.05)) and (meter_per_pix<=mpix_max) and (meter_per_pix>=mpix_min)):
+                                    x = np.array([top_point[1],bot_point[1]],dtype=np.float64)
+                                    y = np.array([top_lat,bot_lat],dtype=np.float64)
+                                    popt,pcov = curve_fit(lin_line,x,y)
+                                    max_lat = lin_line(top_left[1],*popt)
+                                    min_lat = lin_line(bot_left[1],*popt)
+                                    if(max_lat - min_lat <= 2):
+                                        #done=True
+                                        top_point_cen = dup_lat_final_cen[p][stored_index_top[p][j]]
+                                        top_point_lat = dup_lat_final[p][stored_index_top[p][j]]
+                                        bot_point_cen = dup_lat_final_cen[k][stored_index_bot[k][i]]
+                                        bot_point_lat = dup_lat_final[k][stored_index_bot[k][i]]
+                                        delta_pix = bot_point[1] - top_point_cen[1] 
+                                        total = dist_top + dist_bot
+                                        top_dist_corner = min(dist_ul_top,dist_ur_top)
+                                        bot_dist_corner = min(dist_lr_bot,dist_ll_bot)
+                                        if(np.isfinite(summ)==False):
+                                            top_max = dist_top + min(top_point[0],abs(top_point[0]-top_right[1]))
+                                            #top_max = min(dist_top,top_dist_corner)
+                                            bot_max = dist_bot + min(bot_point[0],abs(bot_point[0]-bot_right[1]))#
+                                            #bot_max = min(dist_bot,bot_dist_corner)
+                                        else:
+                                            top_max = max(dist_top,top_dist_corner)
+                                            bot_max = max(dist_bot,bot_dist_corner)
+                                        total = top_max+bot_max
+                                        print(total,top_point_lat,bot_point_lat,top_point_cen,\
+                                              bot_point_cen,top_max,bot_max,meter_per_pix,max_lat,min_lat)
+                                        if(total<min_dist_sum):
+                                            min_dist_sum = total
+                                            arr = [k,i,p,j]
+                                        if(dist_top<min_dist_top):
+                                            min_dist_top = dist_top
+                                        if(dist_bot<min_dist_bot):
+                                            min_dist_bot = dist_bot
+                                        delta_lat = top_point_lat - bot_point_lat 
+                                        meter_per_pix = 1e5*delta_lat/delta_pix
+                                        #print(top_point,bot_point)
+
+                """
+                print(min_dist_sum)        
+                print(min_dist_top,arr) 
+                print(min_dist_bot,arr) 
+                print(dup_lat_final_cen[arr[2]][stored_index_top[arr[2]][arr[3]]])
+                print(dup_lat_final_cen[arr[0]][stored_index_bot[arr[0]][arr[1]]])
+                print(dup_lat_final[arr[2]][stored_index_top[arr[2]][arr[3]]])
+                print(dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]])
+                """
+                if(np.isfinite(summ)==False):
+                    thresh = 1e5
+                else:
+                    thresh = 1000
+                
+                if(min_dist_sum<thresh):
+                    lat3d = np.zeros((3,2))
+                    lat3d[0,0] = dup_lat_final_cen[arr[2]][stored_index_top[arr[2]][arr[3]]][1] 
+                    lat3d[1,0] =dup_lat_final_cen[arr[2]][stored_index_top[arr[2]][arr[3]]][0] 
+                    lat3d[2,0] = dup_lat_final[arr[2]][stored_index_top[arr[2]][arr[3]]]
+
+                    lat3d[0,1] = dup_lat_final_cen[arr[0]][stored_index_bot[arr[0]][arr[1]]][1]
+                    lat3d[1,1] = dup_lat_final_cen[arr[0]][stored_index_bot[arr[0]][arr[1]]][0]
+                    lat3d[2,1] = dup_lat_final[arr[0]][stored_index_bot[arr[0]][arr[1]]]
+                elif(min_dist_sum>thresh  ):
+                    # no good pair
+                    # need to sort the lats by didstance to pick best match to a corner
+                    lat3d = np.zeros((3,1))
+                    lat3d[0,0] = min_c_dist_cen[1]
+                    lat3d[1,0] = min_c_dist_cen[0]
+                    lat3d[2,0] = min_c_dist_lat
+
+            elif(len(dist_y_bot)==1):
+                #here, we only have one set of lons, all possibly duplicated
+                # we need to pick the one that is closest to a corner
+                if(len(stored_dist_y_ur[0])>1):
+                    print(stored_dist_y_ur)
+                    arr = np.array([stored_dist_y_ul[0][0],stored_dist_y_ur[0][0],stored_dist_y_lr[0][0],stored_dist_y_ll[0][0]],dtype=np.float64)
+                    arr_indx = np.array([stored_indx_y_ul[0][0],stored_indx_y_ur[0][0],stored_indx_y_lr[0][0],stored_indx_y_ll[0][0]],dtype=int)
+                    #print(arr)
+                    #print(arr_indx)
+                    best_lat = np.min(arr)
+                    #print(best_lon)
+                    idx = int(np.where(arr==best_lat)[0])
+                    #print(idx)
+                    lat3d=np.zeros((3,1))
+                    lat3d[2,0] = dup_lat_final[0][arr_indx[idx]]
+                    lat3d[1,0] = dup_lat_final_cen[0][arr_indx[idx]][0]
+                    lat3d[0,0] = dup_lat_final_cen[0][arr_indx[idx]][1]
+                else:
+                    lat3d=np.zeros((3,1))
+                    lat3d[2,0] = dup_lat_final[0][0]
+                    lat3d[1,0] = dup_lat_final_cen[0][0][0]
+                    lat3d[0,0] = dup_lat_final_cen[0][0][1]                  
+            else:
+                lat3d = np.zeros((3,1))
+
+            
+            #"""    
+
+            # trivial solution, only two lats detected, although in different locations
+            # should calculate dist in pixels / delta lat and get approximate lat range in between bounds
+            # should be less than about 1.5 degrees as maps are not any larger...
+            # there are only 1-2 points in each
+            #print(lon,clon)
+            print('distxright ',len(dist_x_right))
+            """
+            if(len(dist_x_right)==2):
+                for i in range(len(stored_dist_right[0])):
+                    right_point = dup_lon_final_cen[0][stored_index_right[0][i]]
+                    right_lon = dup_lon_final[0][stored_index_right[0][i]]
+                    #print(bottom_point,bot_lat)
+                    for j in range(len(stored_dist_left[1])):
+                        left_point = dup_lon_final_cen[1][stored_index_left[1][j]]
+                        left_lon = dup_lon_final[1][stored_index_left[1][j]]
+                        delta_lon = right_lon - left_lon
+                        delta_pix = right_point[1] - left_point[1]
+                        #print(top_lat,bot_lat,delta_lat,top_point,bot_point,delta_pix)
+
+                left_point_cen = dup_lon_final_cen[1][stored_index_left[1][0]]
+                left_point_lon = dup_lon_final[1][stored_index_left[1][0]]
+                right_point_cen = dup_lon_final_cen[0][stored_index_right[0][0]]
+                right_point_lon = dup_lon_final[0][stored_index_right[0][0]]
+                delta_pix = right_point[0] - left_point_cen[0] 
+                delta_lon = right_point_lon - left_point_lon 
+                meter_per_pix = 1e5*delta_lon/delta_pix
+                #print(delta_pix,delta_lon,meter_per_pix)
+                #print(right_point,right_point_lon)
+                #print(left_point,left_point_lon)
+                lon3d = np.zeros((3,2))
+                lon3d[0,0] = right_point[1] ; lon3d[0,1] = left_point[1]
+                lon3d[1,0] = right_point[0] ; lon3d[1,1] = left_point[0]
+                lon3d[2,0] = right_point_lon; lon3d[2,1] = left_point_lon  
+
+            """
+            done=False
+            min_dist_left = 1e6
+            min_dist_right= 1e6
+            min_dist_sum = 1e6
+
+            min_dist_ul = 1e6
+            min_dist_ur = 1e6
+            min_dist_lr = 1e6
+            min_dist_ll = 1e6
+            
+            min_c_dist = 1e6
+            min_c_dist_arr = []
+            
+            arr_x_values = []
+            delta_x_values = []
+
+
+            if(len(dist_x_right)>=2 and done==False):
+                for k in range(len(stored_dist_right)):
+                    for i in range(len(stored_dist_right[k])):
+                        right_point = dup_lon_final_cen[k][stored_index_right[k][i]]
+                        right_lon = dup_lon_final[k][stored_index_right[k][i]]
+                        dist_right = stored_dist_right[k][i]
+                        #dist_ul_right = stored_dist_x_ul[k][i]
+                        dist_ur_right = stored_dist_x_ur[k][i]
+                        dist_lr_right = stored_dist_x_lr[k][i]
+                        #print(right_point,right_lon,dist_ur_right)
+                        #dist_ll_right = stored_dist_x_ll[k][i]
+                        for p in range(len(stored_dist_left)):
+                            for j in range(len(stored_dist_left[p])):
+                                #print(k,i,p,j)
+                                left_point = dup_lon_final_cen[p][stored_index_left[p][j]]
+                                left_lon = dup_lon_final[p][stored_index_left[p][j]]
+                                dist_left = stored_dist_left[p][j]
+                                dist_ul_left = stored_dist_x_ul[p][j]
+                                #dist_ur_left = stored_dist_x_ur[p][j]
+                                #dist_lr_left = stored_dist_x_lr[p][j]
+                                dist_ll_left = stored_dist_x_ll[p][j]
+                                if(np.isfinite(summ)==False):
+                                    #app = np.array([dist_ul_left,dist_ll_left,dist_left,dist_ur_right,dist_lr_right,dist_right])
+                                    app = np.array([dist_left,dist_right])
+                                else:
+                                    app = np.array([dist_ul_left,dist_ll_left,dist_ur_right,dist_lr_right])
+                                min_c = np.min(app)
+                                loc = np.where(min_c == app)[0]
+                                if(min_c<min_c_dist):
+                                    min_c_dist = min_c
+                                    if(loc<=loc_count):
+                                        min_c_dist_lon = left_lon
+                                        min_c_dist_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
+                                    else:
+                                        min_c_dist_lon = right_lon
+                                        min_c_dist_cen = dup_lon_final_cen[k][stored_index_right[k][i]]
+                                delta_lon = right_lon - left_lon
+                                delta_pix = right_point[0] - left_point[0]
+                                
+                                # get approximate ratio of lon to lat for mixing slopes
+                                pt1 = (clue_y,left_lon)
+                                pt3 = (clue_y,right_lon)
+                                dist_horz = distance.distance(pt1, pt3).m
+                                meter_per_pix = dist_horz/delta_pix
+                                
+                                arr_x_values.append([k,i,p,j])
+                                delta_x_values.append(meter_per_pix)                                
+                                
+                                
+                                print(right_lon,left_lon,delta_lon,right_point,left_point,delta_pix,meter_per_pix,mpix_max,mpix_min)
+                                if(delta_pix > 0 and delta_lon > 0 and done==False and (clue_x <= (right_lon+0.05))\
+                                   and (clue_x >= (left_lon-0.05)) and (meter_per_pix<=mpix_max) and (meter_per_pix>=mpix_min)):
+                                    x = np.array([left_point[0],right_point[0]],dtype=int)
+                                    y = np.array([left_lon,right_lon],dtype=np.float64)
+                                    popt,pcov = curve_fit(lin_line,x,y)
+                                    max_lon = lin_line(top_left[0],*popt)
+                                    min_lon = lin_line(top_right[0],*popt)
+                                    if(max_lon - min_lon <= 2):
+                                        #done=True
+                                        left_point_cen = dup_lon_final_cen[p][stored_index_left[p][j]]
+                                        left_point_lon = dup_lon_final[p][stored_index_left[p][j]]
+                                        right_point_cen = dup_lon_final_cen[k][stored_index_right[k][i]]
+                                        right_point_lon = dup_lon_final[k][stored_index_right[k][i]]
+                                        delta_pix = right_point[1] - left_point_cen[1] 
+
+                                        total = dist_right + dist_left
+                                        left_dist_corner = min(dist_ul_left,dist_ll_left)
+                                        right_dist_corner = min(dist_ur_right,dist_lr_right)
+                                        if(np.isfinite(summ)==False):
+                                            left_max = min(dist_left,left_dist_corner)
+                                            right_max = min(dist_right,right_dist_corner)
+                                        else:
+                                            left_max = max(dist_left,left_dist_corner)
+                                            right_max = max(dist_right,right_dist_corner)
+                                        total = left_max + right_max
+                                        print(total,left_point_lon,right_point_lon,\
+                                              left_point_cen,right_point_cen,left_max,\
+                                              right_max,meter_per_pix,max_lon,min_lon)
+                                        if(total<min_dist_sum):
+                                            min_dist_sum = total
+                                            arr = [k,i,p,j]
+                                        if(dist_left<min_dist_left):
+                                            min_dist_left = dist_left
+                                        if(dist_right<min_dist_right):
+                                            min_dist_right = dist_right
+                                        delta_lon = right_point_lon - left_point_lon 
+                                        meter_per_pix = 1e5*delta_lon/delta_pix
+                """
+                print(min_dist_sum)        
+                print(min_dist_right,arr) 
+                print(min_dist_left,arr) 
+                print(dup_lon_final_cen[arr[2]][stored_index_left[arr[2]][arr[3]]])
+                print(dup_lon_final_cen[arr[0]][stored_index_right[arr[0]][arr[1]]])
+                print(dup_lon_final[arr[2]][stored_index_left[arr[2]][arr[3]]])
+                print(dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]])
+                """
+                if(np.isfinite(summ)==False):
+                    thresh = 1e5
+                else:
+                    thresh = 1000
+                if(min_dist_sum<thresh):
+                    lon3d = np.zeros((3,2))
+                    lon3d[0,0] = dup_lon_final_cen[arr[2]][stored_index_left[arr[2]][arr[3]]][1] 
+                    lon3d[1,0] =dup_lon_final_cen[arr[2]][stored_index_left[arr[2]][arr[3]]][0] 
+                    lon3d[2,0] = dup_lon_final[arr[2]][stored_index_left[arr[2]][arr[3]]]
+
+                    lon3d[0,1] = dup_lon_final_cen[arr[0]][stored_index_right[arr[0]][arr[1]]][1]
+                    lon3d[1,1] = dup_lon_final_cen[arr[0]][stored_index_right[arr[0]][arr[1]]][0]
+                    lon3d[2,1] = dup_lon_final[arr[0]][stored_index_right[arr[0]][arr[1]]]  
+
+                elif(min_dist_sum>thresh ):
+                    lon3d = np.zeros((3,1))
+                    print(min_c_dist_cen)
+                    lon3d[0,0] = min_c_dist_cen[1]
+                    lon3d[1,0] = min_c_dist_cen[0]
+                    lon3d[2,0] = min_c_dist_lon
+
+                    
+            elif(len(dist_x_right)==1):
+                #here, we only have one set of lons, all possibly duplicated
+                # we need to pick the one that is closest to a corner
+                if(len(stored_dist_x_ur[0])>1):
+                    arr = np.array([stored_dist_x_ul[0][0],stored_dist_x_ur[0][0],stored_dist_x_lr[0][0],stored_dist_x_ll[0][0]],dtype=np.float64)
+                    arr_indx = np.array([stored_indx_x_ul[0][0],stored_indx_x_ur[0][0],stored_indx_x_lr[0][0],stored_indx_x_ll[0][0]],dtype=int)
+                    best_lon = np.min(arr)
+                    idx = int(np.where(arr==best_lon)[0])
+                    lon3d=np.zeros((3,1))
+                    lon3d[2,0] = dup_lon_final[0][arr_indx[idx]]
+                    lon3d[1,0] = dup_lon_final_cen[0][arr_indx[idx]][0]
+                    lon3d[0,0] = dup_lon_final_cen[0][arr_indx[idx]][1]
+                else:
+                    lon3d=np.zeros((3,1))
+                    lon3d[2,0] = dup_lon_final[0][0]
+                    lon3d[1,0] = dup_lon_final_cen[0][0][0]
+                    lon3d[0,0] = dup_lon_final_cen[0][0][1]                  
+            else:
+                lon3d=np.zeros((3,1))
+                
+            #arr_y_values = []
+            #delta_y_values = []
+
+            best_ratio_diff = 1e5
+            smallest_ratio = 1e5
+            successful = False
+            if(len(dist_x_right)>=2 and len(dist_y_bot)>=2):
+                lon3d_temp = np.zeros((3,2))
+                lat3d_temp = np.zeros((3,2))
+                done_lon = False
+                done_lat = False
+                done = False
+                # 7.5 minutes, 15 minutes, 30 minutes are key markers for a map
+                key_deltas = np.array([0.125,0.25],dtype=np.float64)
+                while done == False:
+                    for i in range(len(delta_y_values)):
+                        lat_up = dup_lat_final[arr_y_values[i][2]][stored_index_top[arr_y_values[i][2]][arr_y_values[i][3]]]
+                        lat_low = dup_lat_final[arr_y_values[i][0]][stored_index_bot[arr_y_values[i][0]][arr_y_values[i][1]]]
+                        bot_point = dup_lat_final_cen[arr_y_values[i][0]][stored_index_bot[arr_y_values[i][0]][arr_y_values[i][1]]]
+                        top_point = dup_lat_final_cen[arr_y_values[i][2]][stored_index_bot[arr_y_values[i][2]][arr_y_values[i][3]]]
+                        done_lat=False
+                        for k in range(len(key_deltas)):
+                            if(key_deltas[k]==0.125):
+                                tol = 0.05
+                            else:
+                                tol=0.02
+                            #print(lat_up,lat_low,key_deltas[k])
+                            if(math.isclose(lat_up,lat_low+key_deltas[k],abs_tol=tol) and\
+                               lat_up>lat_low and delta_y_values[i]>0 and done_lat == False):
+                                    #print(lat_up,lat_low,delta_y_values[i])
+                                    done_lat = True
+                                    good_delta = key_deltas[k]
+                        for j in range(len(delta_x_values)):
+                            lon_left = dup_lon_final[arr_x_values[j][2]][stored_index_left[arr_x_values[j][2]][arr_x_values[j][3]]]
+                            lon_right = dup_lon_final[arr_x_values[j][0]][stored_index_right[arr_x_values[j][0]][arr_x_values[j][1]]]
+                            left_point = dup_lon_final_cen[arr_x_values[j][2]][stored_index_left[arr_x_values[j][2]][arr_x_values[j][3]]]
+                            right_point = dup_lon_final_cen[arr_x_values[j][0]][stored_index_right[arr_x_values[j][0]][arr_x_values[j][1]]]
+                            #if(lon_left == -88 and lon_right == -87.875 and lat_up==37):
+                            #    print(left_point,right_point,lon_left,lon_right,(right_point[0] - left_point[0] > 1800 )\
+                            #         ,(clue_x >= (lon_left-0.05)) , (clue_x <= (lon_right+0.05)),delta_x_values[j],\
+                            #    (abs(lon_left) - abs(lon_right) > 0.1),delta_y_values[i]) 
+                            done_lon = False
+                            for k in range(len(key_deltas)):
+                                if(key_deltas[k]==0.125):
+                                    tol = 0.05
+                                else:
+                                    tol=0.03
+                                if(math.isclose(lon_left,lon_right-key_deltas[k],abs_tol=tol) and\
+                                    lon_left<lon_right and delta_x_values[j]>0 and done_lon == False):
+                                    if(done_lat == True):
+                                            done_lon = True
+                                            
+                                            #print(lat_up,lat_low,delta_y_values[i],top_point[1],bot_point[1])
+                                            #print(lon_left,lon_right,delta_x_values[j])
+
+
+                            if(delta_y_values[i]>0 and delta_x_values[j]>0 and delta_y_values[i]<30 and delta_x_values[j]<30):
+                                if( (right_point[0] - left_point[0] > 1200 ) and (bot_point[1] - top_point[1] > 1200) and \
+                                  (lat_up>lat_low) and (lon_right>lon_left) and (clue_x >= (lon_left-0.05)) and (clue_x <= (lon_right+0.05)) \
+                                  and (abs(lon_left) - abs(lon_right) > 0.05) and (abs(lat_up) - abs(lat_low) > 0.05)\
+                                  and (clue_y >= (lat_low-0.05)) and (clue_y <= (lat_up+0.05))):
+                                    #print(lat_up,lat_low,lon_left,lon_right,done_lat,done_lon,delta_y_values[i],delta_x_values[j])
+                                    
+                                    if(math.isclose((delta_y_values[i]/delta_x_values[j]),1,abs_tol=\
+                                                    0.05*(delta_y_values[i]/delta_x_values[j])  )):
+
+                                        if(done_lon == True and done_lat == True and successful == False and done==False):
+                                            print('Delta Y = ',delta_y_values[i])
+                                            best_ratio_diff = abs((delta_y_values[i]/delta_x_values[j])-1)
+                                            smallest_ratio = delta_y_values[i]
+                                            """
+                                            print(right_point[0] , left_point[0])
+                                            print(bot_point[1] , top_point[1])
+                                            print(lat_up,lat_low)
+                                            print(lon_right,lon_left)
+                                            print(delta_y_values[i]/delta_x_values[j])
+                                            """
+
+                                            lon3d_temp[0,0] = left_point[1]
+                                            lon3d_temp[1,0] = left_point[0]
+                                            lon3d_temp[2,0] = lon_left
+
+                                            lon3d_temp[0,1] = right_point[1]         
+                                            lon3d_temp[1,1] = right_point[0]
+                                            lon3d_temp[2,1] = lon_right
+
+                                            lat3d_temp[0,0] = top_point[1]
+                                            lat3d_temp[1,0] = top_point[0]
+                                            lat3d_temp[2,0] = lat_up
+
+                                            lat3d_temp[0,1] = bot_point[1]
+                                            lat3d_temp[1,1] = bot_point[0]
+                                            lat3d_temp[2,1] = lat_low
+
+                                            print('Good Lon 3d ',lon3d_temp)
+                                            print('Good Lon 3d ',lat3d_temp)
+                                            successful = True
+                                            done = True
+                                           
+
+                                        if(abs((delta_y_values[i]/delta_x_values[j])-1) <= best_ratio_diff\
+                                           and delta_y_values[i]<smallest_ratio and \
+                                          successful == False and done == False):
+                                            print('Delta Y1 = ',delta_y_values[i])
+                                            best_ratio_diff = abs((delta_y_values[i]/delta_x_values[j])-1)
+                                            smallest_ratio = delta_y_values[i]
+                                            """
+                                            print(right_point[0] , left_point[0])
+                                            print(bot_point[1] , top_point[1])
+                                            print(lat_up,lat_low)
+                                            print(lon_right,lon_left)
+                                            print(delta_y_values[i]/delta_x_values[j])
+                                            """
+
+                                            lon3d_temp[0,0] = left_point[1]
+                                            lon3d_temp[1,0] = left_point[0]
+                                            lon3d_temp[2,0] = lon_left
+
+                                            lon3d_temp[0,1] = right_point[1]         
+                                            lon3d_temp[1,1] = right_point[0]
+                                            lon3d_temp[2,1] = lon_right
+
+                                            lat3d_temp[0,0] = top_point[1]
+                                            lat3d_temp[1,0] = top_point[0]
+                                            lat3d_temp[2,0] = lat_up
+
+                                            lat3d_temp[0,1] = bot_point[1]
+                                            lat3d_temp[1,1] = bot_point[0]
+                                            lat3d_temp[2,1] = lat_low
+
+                                            print('Temp1 Lon 3d ',lon3d_temp)
+                                            print('Temp1 Lat 3d ',lat3d_temp)
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                                            
+                    done=True
+                    print(successful)
+                    success_lon = False
+                    success_lat = False
+                    # if we failed previously, reduce constraints on ratios, and pick, if any, pair of coords satidying key_deltas
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    if(successful == False):
+                        if(len(dist_x_right)>=2 and len(dist_y_bot)>=2):
+                            lon3d_temp = np.zeros((3,2))
+                            lat3d_temp = np.zeros((3,2))
+                            done_lon = False
+                            done_lat = False
+                            done = False
+                            # 7.5 minutes, 15 minutes, 30 minutes are key markers for a map
+                            key_deltas_y = np.array([0.125,0.25,0.5],dtype=np.float64)
+                            key_deltas_x = np.array([0.125,0.25],dtype=np.float64)
+                            while done == False:
+                                for i in range(len(delta_y_values)):
+                                    lat_up = dup_lat_final[arr_y_values[i][2]][stored_index_top[arr_y_values[i][2]][arr_y_values[i][3]]]
+                                    lat_low = dup_lat_final[arr_y_values[i][0]][stored_index_bot[arr_y_values[i][0]][arr_y_values[i][1]]]
+                                    bot_point = dup_lat_final_cen[arr_y_values[i][0]][stored_index_bot[arr_y_values[i][0]][arr_y_values[i][1]]]
+                                    top_point = dup_lat_final_cen[arr_y_values[i][2]][stored_index_bot[arr_y_values[i][2]][arr_y_values[i][3]]]
+                                    done_lat=False
+                                    for k in range(len(key_deltas_y)):
+                                        #print(lat_up,lat_low,key_deltas[k])
+                                        if(key_deltas_y[k]==0.125):
+                                                tol = 0.05
+                                        else:
+                                                tol=0.03
+                                        if(math.isclose(lat_up,lat_low+key_deltas_y[k],abs_tol=tol) and\
+                                           lat_up>lat_low and delta_y_values[i]>0 and done_lat == False and success_lat == False):
+                                                done_lat = True
+                                                good_delta = key_deltas_y[k]
+                                                print(lat_up,lat_low,delta_y_values[i],bot_point[1] - top_point[1],\
+                                                     (clue_y >= (lat_low-0.05)) and (clue_y <= (lat_up+0.05)))
+                                               
+                                    for j in range(len(delta_x_values)):
+                                        lon_left = dup_lon_final[arr_x_values[j][2]][stored_index_left[arr_x_values[j][2]][arr_x_values[j][3]]]
+                                        lon_right = dup_lon_final[arr_x_values[j][0]][stored_index_right[arr_x_values[j][0]][arr_x_values[j][1]]]
+                                        left_point = dup_lon_final_cen[arr_x_values[j][2]][stored_index_left[arr_x_values[j][2]][arr_x_values[j][3]]]
+                                        right_point = dup_lon_final_cen[arr_x_values[j][0]][stored_index_right[arr_x_values[j][0]][arr_x_values[j][1]]]
+                                        done_lon = False
+                                        
+                                        for k in range(len(key_deltas_x)):
+                                            if(key_deltas_x[k]==0.125):
+                                                tol = 0.05
+                                            else:
+                                                tol=0.03
+                                            if(math.isclose(lon_left,lon_right-key_deltas[k],abs_tol=tol) and\
+                                                lon_left<lon_right and delta_x_values[j]>0 and done_lon == False \
+                                              and success_lon == False):
+                                                done_lon = True
+                                                #print(lon_left,lon_right,left_point[0],right_point[0],delta_x_values[j],\
+                                                #     (lon_right>lon_left) , (clue_x >= (lon_left-0.05)) , (clue_x <= (lon_right+0.05)) \
+                                                #, (abs(lon_left) - abs(lon_right) > 0.05))
+                                        if(done_lon == False and success_lon == False and lon_left<lon_right \
+                                           and delta_x_values[j]>0 and abs(lon_left-lon_right+1)<1.01 ): 
+                                            if(done_lat == True or success_lat == True):
+                                                if(good_delta == 0.5):                                                    
+                                                    # is delta x in meter close to delta y in meter?
+                                                    # get approximate ratio of lon to lat for mixing slopes
+                                                    #print(delta_x_values[j],delta_y_values[i])
+                                                    if(delta_y_values[i] - delta_x_values[j] <= 5.0):
+                                                        done_lon = True
+                                                        #print('Good Delta Y Lat = 0.5 degrees', lon_left,lon_right,\
+                                                        #      lat_up,lat_low,delta_x_values[j])
+
+                                        if(delta_y_values[i]>0 and delta_x_values[j]>0 and delta_y_values[i]<30 and delta_x_values[j]<30):
+                                            if( (right_point[0] - left_point[0] > 1200 ) and (bot_point[1] - top_point[1] > 1200) and \
+                                              (lat_up>lat_low) and (lon_right>lon_left) and (clue_x >= (lon_left-0.05)) and (clue_x <= (lon_right+0.05)) \
+                                              and (abs(lon_left) - abs(lon_right) > 0.05) and (abs(lat_up) - abs(lat_low) > 0.05)\
+                                              and (clue_y >= (lat_low-0.05)) and (clue_y <= (lat_up+0.05))):
+                                                
+                                                    if(done_lon == True and done_lat == True and\
+                                                           success_lon==False and success_lat==False):
+                                                            if(good_delta!=0.5):
+                                                                print('Delta Y/X2 = ',delta_y_values[i],delta_x_values[j])
+                                                                best_ratio_diff = abs((delta_y_values[i]/delta_x_values[j])-1)
+                                                                smallest_ratio = delta_y_values[i]
+                                                                """
+                                                                print(right_point[0] , left_point[0])
+                                                                print(bot_point[1] , top_point[1])
+                                                                print(lat_up,lat_low)
+                                                                print(lon_right,lon_left)
+                                                                print(delta_y_values[i]/delta_x_values[j])
+                                                                """
+
+                                                                lon3d_temp[0,0] = left_point[1]
+                                                                lon3d_temp[1,0] = left_point[0]
+                                                                lon3d_temp[2,0] = lon_left
+
+                                                                lon3d_temp[0,1] = right_point[1]         
+                                                                lon3d_temp[1,1] = right_point[0]
+                                                                lon3d_temp[2,1] = lon_right
+
+                                                                lat3d_temp[0,0] = top_point[1]
+                                                                lat3d_temp[1,0] = top_point[0]
+                                                                lat3d_temp[2,0] = lat_up
+
+                                                                lat3d_temp[0,1] = bot_point[1]
+                                                                lat3d_temp[1,1] = bot_point[0]
+                                                                lat3d_temp[2,1] = lat_low
+
+                                                                print('Temp2 Lon 3d ',lon3d_temp)
+                                                                print('Temp2 Lat 3d ',lat3d_temp)  
+                                                                successful = True
+                                                                done = True
+                                                                success_lat = True
+                                                                success_lon == True
+                                                    elif(done_lon == True and done_lat == True and\
+                                                           success_lon==False and success_lat==False and \
+                                                        top_point[1] < 3000 and bot_point[1] > 5000):
+                                                        if(good_delta==0.5):
+                                                            print('Delta Y/X3 = ',delta_y_values[i],delta_x_values[j])
+                                                            best_ratio_diff = abs((delta_y_values[i]/delta_x_values[j])-1)
+                                                            smallest_ratio = delta_y_values[i]
+                                                            """
+                                                            print(right_point[0] , left_point[0])
+                                                            print(bot_point[1] , top_point[1])
+                                                            print(lat_up,lat_low)
+                                                            print(lon_right,lon_left)
+                                                            print(delta_y_values[i]/delta_x_values[j])
+                                                            """
+
+                                                            lon3d_temp[0,0] = left_point[1]
+                                                            lon3d_temp[1,0] = left_point[0]
+                                                            lon3d_temp[2,0] = lon_left
+
+                                                            lon3d_temp[0,1] = right_point[1]         
+                                                            lon3d_temp[1,1] = right_point[0]
+                                                            lon3d_temp[2,1] = lon_right
+
+                                                            lat3d_temp[0,0] = top_point[1]
+                                                            lat3d_temp[1,0] = top_point[0]
+                                                            lat3d_temp[2,0] = lat_up
+
+                                                            lat3d_temp[0,1] = bot_point[1]
+                                                            lat3d_temp[1,1] = bot_point[0]
+                                                            lat3d_temp[2,1] = lat_low
+
+                                                            print('Temp3 Lon 3d ',lon3d_temp)
+                                                            print('Temp3 Lat 3d ',lat3d_temp)  
+                                                            successful = True
+                                                            done = True
+                                                            success_lat = True
+                                                            success_lon == True
+                                        else:
+                                            if(delta_y_values[i]>0  and delta_y_values[i]<30 and (bot_point[1] - top_point[1] > 1200)\
+                                               and (lat_up>lat_low) and (lon_right>lon_left) and  (abs(lat_up) - abs(lat_low) > 0.05)\
+                                              and (clue_y >= (lat_low-0.05)) and (clue_y <= (lat_up+0.05))):
+                                                if(done_lat == True and success_lat==False):
+                                                    if(good_delta==0.5 and delta_y_values[i]>20 and top_point[1]<3000):
+                                                    
+                                                    
+                                                            print('Delta Y2 = ',delta_y_values[i])
+
+                                                            lat3d_temp[0,0] = top_point[1]
+                                                            lat3d_temp[1,0] = top_point[0]
+                                                            lat3d_temp[2,0] = lat_up
+
+                                                            lat3d_temp[0,1] = bot_point[1]
+                                                            lat3d_temp[1,1] = bot_point[0]
+                                                            lat3d_temp[2,1] = lat_low
+
+
+                                                            print('Temp2 Lat 3d ',lat3d_temp)  
+                                                            success_lat = True
+                                                    elif(good_delta!=0.5):
+                                                            print('Delta Y3 = ',delta_y_values[i])
+
+                                                            lat3d_temp[0,0] = top_point[1]
+                                                            lat3d_temp[1,0] = top_point[0]
+                                                            lat3d_temp[2,0] = lat_up
+
+                                                            lat3d_temp[0,1] = bot_point[1]
+                                                            lat3d_temp[1,1] = bot_point[0]
+                                                            lat3d_temp[2,1] = lat_low
+
+
+                                                            print('Temp3 Lat 3d ',lat3d_temp)  
+                                                            success_lat = True                                                        
+                                            if(delta_x_values[j]>0 and delta_x_values[j]<30 and\
+                                               (right_point[0] - left_point[0] > 1200 )  \
+                                               and (lon_right>lon_left) and (clue_x >= (lon_left-0.05)) and (clue_x <= (lon_right+0.05)) \
+                                              and (abs(lon_left) - abs(lon_right) > 0.05)):                                                        
+                                                if(done_lon == True and success_lat==False):
+                                                        print('Delta X = ',delta_x_values[j])
+
+                                                        lon3d_temp[0,0] = left_point[1]
+                                                        lon3d_temp[1,0] = left_point[0]
+                                                        lon3d_temp[2,0] = lon_left
+
+                                                        lon3d_temp[0,1] = right_point[1]         
+                                                        lon3d_temp[1,1] = right_point[0]
+                                                        lon3d_temp[2,1] = lon_right
+
+
+                                                        success_lon = True
+                                                        print('Temp Lon 3d ',lon3d_temp)            
+                                done = True
+                if (lon3d_temp[2,0] != 0 and lon3d_temp[2,1] != 0):
+                    lon3d = lon3d_temp
+                if (lat3d_temp[2,0] != 0 and lat3d_temp[2,1] != 0):
+                    lat3d = lat3d_temp
+                    
+                
+                
+            return lat3d,lon3d
+
+if __name__=="__main__":
+    file='/scratch/e.conway/DARPA_MAPS/Training/GEO_0127.tif'
+    with rasterio.open(file,'r') as f:
+        data=f.read()
+    data = data.transpose((1,2,0))
+    img_shape = data.shape
+    
+    lon = np.array([-113.25    ,   -112.11666667, -113.        ],dtype=np.float64)
+    
+    lat = np.array([44.    ,     44.   ,      45.  ,       45.  ,       45.    ,     44.,
+ 45.    ,     45.    ,     45.   ,      45.     ,    45. ,        45.,
+ 45.   ,      44.     ,    44.    ,     45.    ,     45. ,        45.,
+ 45.    ,     44.25   ,    44.50305556, 44.25   ,    44. ,        44.,
+ 44.25027778, 44.     ,    45.    ,     44.     ,    46.  ,       43.,
+ 44.   ,      44.     ,    44.91666667 ,44.91666667, 43.  ,       45.,
+ 43.   ,      44.     ,    45.     ,    43.      ,   43.  ,       43.,
+ 44.   ,      44.    ,     43.     ,    43.    ,     45. ,        43.,
+ 43.  ,       44.    ,     44.91666667, 44.    ,     44.91666667, 43.,
+ 45.  ,       43.    ,     44.     ,    44.91666667 ,44.    ,     44.91666667,
+ 44.   ,      44.91666667, 44.     ,    44.91666667 ,44.    ,     44.,
+ 44.   ,      44.    ,     45.     ,    43.     ,    44.      ,   44.91666667,
+ 45.   ,      43.    ,     44.25027778 ,44.   ,      43.      ,   43.,
+ 45.   ,      43.    ,     44.05      ],dtype=np.float64)
+    
+    clue_x = -113.5
+    clue_y = 44.5
+    
+    clon = np.array([[ 9918.,  6624.],
+ [11693. , 4165.],
+ [11456.,  6189.]],dtype=np.float64)
+    
+    
+    clat = np.array([[ 1235. , 5699.],
+ [ 1235. , 5699.],
+ [ 1664. , 3128.],
+ [ 1746.,  3837.],
+ [ 1751.,  4347.],
+ [ 1600. , 4405.],
+ [ 2296. ,  896.],
+ [ 3071.,  1370.],
+ [ 3294.,  2002.],
+ [ 3127. , 2054.],
+ [ 3093.,  4261.],
+ [ 4451. , 2013.],
+ [ 4426. , 2382.],
+ [ 5205. ,  781.],
+ [ 5205. ,  781.],
+ [ 4825. , 2469.],
+ [ 4576.,  2633.],
+ [ 4935.,  3131.],
+ [ 5084. , 4238.],
+ [ 5058. , 5810.],
+ [ 9358. , 6601.],
+ [ 9277.,  7341.],
+ [ 9796. , 3620.],
+ [ 9796. , 3620.],
+ [ 9796. , 3620.],
+ [ 9796. , 3620.],
+[10690. , 6516.],
+ [10651. , 7535.],
+ [11601. , 4337.],
+ [ 1395. ,  671.],
+ [ 2106.,  1654.],
+ [ 4129.,  4240.],
+ [ 5205. ,  781.],
+ [ 5205. ,  781.],
+ [ 4855. , 4091.],
+ [ 4538. , 4223.],
+ [ 4538. , 4223.],
+ [ 4591. , 4790.],
+ [ 4650. , 8335.],
+ [ 4650. , 8335.],
+ [ 5620. , 3939.],
+ [ 5608. , 4299.],
+ [ 5567.,  5818.],
+ [ 5934.,  7509.],
+ [ 6060.,  3857.],
+ [ 6121.,  4268.],
+ [ 6446.,  4320.],
+ [ 6446. , 4320.],
+ [ 6025.,  5004.],
+ [ 7354. , 2080.],
+ [ 7354. , 2080.],
+ [ 7690.,  1451.],
+ [ 7690.,  1451.],
+ [ 7521.,  1944.],
+ [ 7641.,  1944.],
+ [ 7641. , 1944.]   , 
+ [ 7861. , 2441.],
+ [ 7861. , 2441.],
+ [ 7524. , 5697.],
+ [ 7524.,  5697.],
+ [ 8550.,  2110.],
+ [ 8550.,  2110.],
+ [ 8311.,  2366.],
+ [ 8311. , 2366.],
+ [ 8510. , 2459.],
+ [ 8477. , 3199.],
+ [ 8329. , 3328.],
+ [ 8267. , 4546.],
+ [ 9206.,  1714.],
+ [ 9206.,  1714.],
+ [ 9893. , 2356.],
+ [ 9893. , 2356.],
+ [10269. , 3282.],
+ [10269. , 3282.],
+ [ 9796. , 3620.],
+ [10056. , 5767.],
+ [11033. , 4754.],
+ [11272. , 1927.],
+ [11474.,  4509.],
+ [11474.,  4509.],
+ [11416. , 5766.]]                     ,dtype=np.float64)
+    
+    mpix_max=30
+    mpix_min=0.1
+    bounds = [np.nan,np.nan,np.nan,np.nan]
+    
+    lat3d,lon3d = main(lat,clat,lon,clon,img_shape,clue_x,clue_y,bounds,mpix_max,mpix_min)
+
+    print(lat3d)
+    print(lon3d)
+            
+            

@@ -36,12 +36,13 @@ import time
 
 def main(keywords,bboxes,centers,clue_x,clue_y):
 
-            if(int(clue_x)<100):
+            if(abs(int(clue_x))<100):
                 clue_x = str(clue_x)[1:3]
             else:
                 clue_x = str(clue_x)[1:4]
 
             clue_y = str(clue_y)[0:2]
+            
 
 
             new_keywords = []
@@ -60,7 +61,7 @@ def main(keywords,bboxes,centers,clue_x,clue_y):
                     contin = True
                     if(keywords[i]!=''):
                         if(clue_x in keywords[i] or clue_y in keywords[i]):
-                            #print(keywords[i])
+                            print(keywords[i])
                             top_left_1 = [bboxes[i][0][0],bboxes[i][0][1]]
                             top_right_1 = [bboxes[i][1][0],bboxes[i][0][1]]
                             bot_right_1 = [bboxes[i][1][0],bboxes[i][1][1]]
@@ -74,16 +75,17 @@ def main(keywords,bboxes,centers,clue_x,clue_y):
                                 for j in range(len(keywords)):
                                     if(keywords[j]!=''):
                                         if(('scale' in keywords[i]) or ('scale' in keywords[j])):
-                                            tol=310
+                                            tol=35
                                         else:
-                                            tol=45
+                                            tol=35
                                         top_left_2 = [bboxes[j][0][0],bboxes[j][0][1]]
                                         top_right_2 = [bboxes[j][1][0],bboxes[j][0][1]]
                                         bot_right_2 = [bboxes[j][1][0],bboxes[j][1][1]]
                                         bot_left_2 = [bboxes[j][0][0],bboxes[j][1][1]]
                                         # is box 2 close to box 1 on left side of 1
                                         if(math.isclose(bot_right_2[0],bot_left_1[0],abs_tol=tol) and \
-                                          math.isclose(bot_right_2[1],bot_left_1[1],abs_tol=tol) and i!=j):
+                                          math.isclose(bot_right_2[1],bot_left_1[1],abs_tol=tol) and i!=j and \
+clue_x not in keywords[j] and clue_y not in keywords[j]):
                                             app = True
                                             for en in x:
                                                 if([j,i] in x):
@@ -100,7 +102,8 @@ def main(keywords,bboxes,centers,clue_x,clue_y):
                                             loop_done=True
                                         # is box 2 close to box 1 on right side of 1
                                         if(math.isclose(bot_right_1[0],bot_left_2[0],abs_tol=tol) and \
-                                          math.isclose(bot_right_1[1],bot_left_2[1],abs_tol=tol) and i!=j):
+                                          math.isclose(bot_right_1[1],bot_left_2[1],abs_tol=tol) and i!=j and \
+clue_x not in keywords[j] and clue_y not in keywords[j]):
                                             app = True
                                             for en in x:
                                                 if([i,j] in x):
@@ -141,7 +144,36 @@ def main(keywords,bboxes,centers,clue_x,clue_y):
 
         
         
-if __name__=="__main__":        
+if __name__=="__main__":       
+    
+    fname = 'GEO_0050.txt'
+    with open('/scratch/e.conway/DARPA_MAPS/TrainingKeys/'+fname,'r') as f:
+        data = f.readlines()
+    tot_numbers = []
+    for x in data:
+        tot_numbers.append(x.split('\n')[0])
+        
+    with open('/scratch/e.conway/DARPA_MAPS/TrainingCenters/'+fname,'r') as f:
+        data = f.readlines()
+    tot_centers = []
+    for x in data:
+        tot_centers.append([np.float64(x.split(' ')[0]),np.float64(x.split(' ')[1].split('\n')[0])])
+        
+    with open('/scratch/e.conway/DARPA_MAPS/TrainingBBoxes/'+fname,'r') as f:
+        data = f.readlines()
+    tot_bboxes = []
+    for x in data:
+        tot_bboxes.append([[np.float64(x.split(' ')[0]),np.float64(x.split(' ')[1])],\
+                           [np.float64(x.split(' ')[2]),np.float64(x.split(' ')[3].split('\n')[0])]])
+
+    clues = np.genfromtxt('/scratch/e.conway/DARPA_MAPS/CluesTesting/'+fname.split('.txt')[0]+'_clue.csv',delimiter=',')
+    clue_x = clues[0]
+    clue_y = clues[1]        
+    
+    keywords,bboxes,centers = main(tot_numbers,tot_bboxes,tot_centers,clue_x,clue_y)
+        
+    print('New Keys = ',keywords)
+    """
     tot_numbers = ['105','030']
     print('Old Keys = ',tot_numbers)
     tot_num_centers = [[100,505],[120,505]]
@@ -150,3 +182,4 @@ if __name__=="__main__":
     clue_y = 30
     keywords,bboxes,centers = main(tot_numbers,tot_num_boxes,tot_num_centers,clue_x,clue_y)
     print('New Keys = ',keywords)
+    """
