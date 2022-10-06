@@ -47,7 +47,7 @@ import time
 import rasterio
 import FinalNumbers2 as Fnum
 import Tiling
-import KeywordsEdit
+import KeywordsEdit2
 import MergeKeys
 import PairMatching4
 import WriteFile2
@@ -95,9 +95,9 @@ def main(image_dir,image_path,out_dir,clue_dir,keys_out_dir,cen_out_dir,box_out_
         bounds = np.array([np.nan,np.nan,np.nan,np.nan])
         redo=True
     done=False        
-    #try:
-    test_routine=True
-    while test_routine == True:
+    try:
+        #test_routine=True
+        #while test_routine == True:
         while done == False:
             if(redo==True):
                 print('-----Reattempting Model-----')
@@ -131,6 +131,8 @@ def main(image_dir,image_path,out_dir,clue_dir,keys_out_dir,cen_out_dir,box_out_
               os.path.exists(os.path.join(cen_out_dir,image_path.split('.tif')[0]+'.txt'))==False and \
               os.path.exists(os.path.join(box_out_dir,image_path.split('.tif')[0]+'.txt'))==False):
                 # load the mask of the map
+                pass
+                """
                 if(failure==False and redo==False):
                     tl,br,tile = Tiling.main(bounds,img)
                 else:
@@ -145,6 +147,7 @@ def main(image_dir,image_path,out_dir,clue_dir,keys_out_dir,cen_out_dir,box_out_
                 with open(os.path.join(box_out_dir,image_path.split('.tif')[0]+'.txt'),'w') as f:
                     for box in bboxes:
                         f.write(str(box[0][0])+' '+str(box[0][1])+' '+str(box[1][0])+' '+str(box[1][1])+'\n')
+                """
             else:
                 with open(os.path.join(keys_out_dir,image_path.split('.tif')[0]+'.txt'),'r') as f:
                     data = f.readlines()
@@ -304,7 +307,7 @@ and '5' not in str(scale)):
 
             #----------------------------------#
             print(keywords)
-            tot_numbers,tot_num_centers,tot_num_boxes = KeywordsEdit.main(keywords,centers,bboxes,clue_x,clue_y)
+            tot_numbers,tot_num_centers,tot_num_boxes = KeywordsEdit2.main(keywords,centers,bboxes,clue_x,clue_y)
 
             print(tot_numbers)
 
@@ -383,7 +386,7 @@ lon,lat,clon,clat)
             
             #"""
             test_routine = False
-            """
+            #"""
     except Exception as e:
             print(f"Exception {e}: File = ",image_path)
             #Get clue
@@ -434,7 +437,7 @@ lon,lat,clon,clat)
                 np.savetxt(os.path.join(out_dir,image_path.split('.tif')[0]+'.csv'),np.array([row_test,col_test,calc_lat,calc_lon]).T,\
                       fmt = '%.7f,%.7f,%.7f,%.7f',delimiter=',')
             done=True
-            """
+            #"""
     print('Time = ',time.time()-tz)
     return
 

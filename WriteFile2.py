@@ -132,28 +132,30 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         fity_own=False
 
             # 7.5 minutes, 15 minutes, 30 minutes are key markers for a map
-            key_deltas = np.array([0.125,0.25],dtype=np.float64)
+            key_deltas = np.array([0.125,0.25,0.5],dtype=np.float64)
             done_lat = False
             done_lon = False
             done = False
             if(fity_own == True and fitx_own == True):
                 for k in range(len(key_deltas)):
                     #print(lat_up,lat_low,key_deltas[k])
-                    if(math.isclose(lat3d[2,0],lat3d[2,1]+key_deltas[k],abs_tol=0.01)):
+                    if(math.isclose(lat3d[2,0],lat3d[2,1]+key_deltas[k],abs_tol=0.03) and done_lat==True):
                         #print(lat_up,lat_low,delta_y_values[i])
                         done_lat = True 
+                        good_delta_lat = key_deltas[k]
                         good_delta = key_deltas[k]
                 for k in range(len(key_deltas)):
-                    if(math.isclose(lon3d[2,0],lon3d[2,1]-key_deltas[k],abs_tol=0.01)):
+                    if(math.isclose(lon3d[2,0],lon3d[2,1]-key_deltas[k],abs_tol=0.03) and done_lon==False):
                         done_lon = True
+                        good_delta_lon = key_deltas[k]
                         if(done_lat == True):
                             if(good_delta == key_deltas[k]):
+                                good_delta_lon = key_deltas[k]
                                 done=True
 
-
-            
             if(fity_own == True and fitx_own == True and done == False):
                 print('Checking Fits against each other') 
+                print(done_lat,done_lon)
                 # meter per pixel in each direction
                 deltay1 =  distance.distance((lat_min,clue_x),(lat_max,clue_x)).m /abs(int(Yf-Yz))
                 deltax1 =  distance.distance((clue_y,lon_max),(clue_y,lon_min)).m /abs(int(Xf-Xz))
@@ -168,8 +170,13 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         dist = np.zeros(2)
                         dist[0] = abs(abs(clue_x) - abs(lon3d[2,0]))
                         dist[1] = abs(abs(clue_x) - abs(lon3d[2,1]))
-                        poptx1=popty.copy() *  (dist_vert/dist_horz)
-                        poptx1[0] = -poptx1[0]
+                        if(done_lat==False):
+                            poptx1=popty.copy() *  (dist_vert/dist_horz)
+                        elif(done_lat==True):
+                            if(good_delta_lat!=0.5):
+                                poptx1=popty.copy() #*  (dist_vert/dist_horz)
+                            else:
+                                poptx1=popty.copy() *  (dist_vert/dist_horz)
                         # pick best x point i.e. the one closest to our key point
                         if(dist[0]<dist[1]):
                             print('Best Lon = ',lon3d[2,0]) 
@@ -200,15 +207,20 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         dist = np.zeros(2)
                         dist[0] = abs(abs(clue_y) - abs(lat3d[2,0]))
                         dist[1] = abs(abs(clue_y) - abs(lat3d[2,1]))
+                        if(done_lon==False):
+                            popty1=poptx.copy() *  (dist_horz/dist_vert)
+                        elif(done_lon==True):
+                            if(good_delta_lon==0.5):
+                                popty1=poptx.copy() #*  (dist_horz/dist_vert)
+                            else:
+                                popty1=poptx.copy() *  (dist_horz/dist_vert)
                         if(dist[0]<dist[1]):
                             print('Best Lat = ',lat3d[2,0]) 
-                            popty1=poptx.copy() *  (dist_horz/dist_vert)
                             popty1[0] = -popty1[0]
                             c = lat3d[2,0] - popty1[0]*lat3d[0,0]
                             popty1[1] = c
                         else:
                             print('Best Lat = ',lat3d[2,1]) 
-                            popty1=poptx.copy() *  (dist_horz/dist_vert)
                             popty1[0] = -popty1[0]
                             c = lat3d[2,1] - popty1[0]*lat3d[0,1]
                             popty1[1] = c
@@ -263,7 +275,13 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 dist = np.zeros(2)
                 dist[0] = abs(abs(clue_x) - abs(lon3d[2,0]))
                 dist[1] = abs(abs(clue_x) - abs(lon3d[2,1]))
-                poptx=popty.copy() *  (dist_vert/dist_horz)
+                if(done_lat==False):
+                    poptx=popty.copy() *  (dist_vert/dist_horz)
+                elif(done_lat==True):
+                    if(good_delta_lat==0.5):
+                        poptx=popty.copy() #*  (dist_vert/dist_horz)
+                    else:
+                        poptx=popty.copy() *  (dist_vert/dist_horz)
                 poptx[0] = -poptx[0]
                 if(dist[0]<dist[1]):
                     c = lon3d[2,0] - poptx[0]*lon3d[1,0]
@@ -324,7 +342,6 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     else:
                         xtol=4
                         
-                    
                     #left side
                     idx = np.argsort(abs(dif_lon_left))
                     dif_lon_left = dif_lon_left[idx]
@@ -333,6 +350,22 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     print(idx)
                     print(lons)
                     print(dif_lon_left)
+
+                    for i in range(len(lons)):
+                        int_lon = np.floor(lons[i])
+                        if(math.isclose(abs(lons[i]-int_lon),0.125,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lon3d = np.zeros((3,1))
+                             lon3d[0,0] = clons[i,1]
+                             lon3d[1,0] = clons[i,0]
+                             lon3d[2,0] = lons[i]
+                        elif(math.isclose(abs(lons[i]-int_lon),0.25,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lon3d = np.zeros((3,1))
+                             lon3d[0,0] = clons[i,1]
+                             lon3d[1,0] = clons[i,0]
+                             lon3d[2,0] = lons[i]
+                     
                     # only take if dif_lon_left<100 and clue_x to right
                     #dif_lon_left = dif_lon_left[abs(dif_lon_left)<6500]
                     if(len(dif_lon_left)>=1):
@@ -352,6 +385,21 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     dif_lon_right = dif_lon_right[idx]
                     lons = lons[idx]
                     clons = clons[idx,:]
+
+                    for i in range(len(lons)):
+                        int_lon = np.floor(lons[i])
+                        if(math.isclose(abs(lons[i]-int_lon),0.125,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lon3d = np.zeros((3,1))
+                             lon3d[0,0] = clons[i,1]
+                             lon3d[1,0] = clons[i,0]
+                             lon3d[2,0] = lons[i]
+                        elif(math.isclose(abs(lons[i]-int_lon),0.25,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lon3d = np.zeros((3,1))
+                             lon3d[0,0] = clons[i,1]
+                             lon3d[1,0] = clons[i,0]
+                             lon3d[2,0] = lons[i]
                     # only take if dif_lon_right<100 and clue_x to left
                     #dif_lon_right = dif_lon_right[abs(dif_lon_right)<6500]
                     if(len(dif_lon_right)>=1 and done==False):
@@ -365,12 +413,16 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                                     lon3d[2,0] = lons[p]
                                     print('New Lon3d Right ', lon3d)
                                     done=True
-                    
-                    poptx=popty.copy() 
+                    if(done_lat==False):
+                        poptx=popty.copy() *  (dist_vert/dist_horz)
+                    elif(done_lat==True):
+                        if(good_delta_lat==0.5):
+                            poptx=popty.copy() #*  (dist_vert/dist_horz)
+                        else:
+                            poptx=popty.copy() *  (dist_vert/dist_horz)
                     
                     print(poptx,dist_vert,dist_horz)
                     
-                    poptx[0] = -poptx[0] * (dist_vert/dist_horz)
                     c = lon3d[2,0] - poptx[0]*lon3d[1,0]
                     poptx[1] = c
                     fitx_help=True
@@ -393,13 +445,25 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                 dist[0] = abs(abs(clue_y) - abs(lat3d[2,0]))
                 dist[1] = abs(abs(clue_y) - abs(lat3d[2,1]))
                 if(dist[0]<dist[1]):
-                    popty=poptx.copy() *  (dist_horz/dist_vert)
+                    if(done_lon==False):
+                        popty=poptx.copy() *  (dist_horz/dist_vert)
+                    elif(done_lon==True):
+                        if(good_delta_lon==0.5):
+                            popty=poptx.copy() #*  (dist_horz/dist_vert)
+                        else:
+                            popty=poptx.copy() *  (dist_horz/dist_vert)
                     popty[0] = -popty[0]
                     c = lat3d[2,0] - popty[0]*lat3d[0,0]
                     popty[1] = c
                     fity_help=True
                 else:
-                    popty=poptx.copy() *  (dist_horz/dist_vert)
+                    if(done_lon==False):
+                        popty=poptx.copy() *  (dist_horz/dist_vert)
+                    elif(done_lon==True):
+                        if(good_delta_lon==0.5):
+                            popty=poptx.copy() #*  (dist_horz/dist_vert)
+                        else:
+                            popty=poptx.copy() #*  (dist_horz/dist_vert)
                     popty[0] = -popty[0]
                     c = lat3d[2,1] - popty[0]*lat3d[0,1]
                     popty[1] = c
@@ -464,6 +528,21 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     print(idy)
                     print(lats)
                     print(dif_lat_up)
+
+                    for i in range(len(lats)):
+                        int_lat = np.floor(lats[i])
+                        if(math.isclose(abs(lats[i]-int_lat),0.125,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lat3d = np.zeros((3,1))
+                             lat3d[0,0] = clats[i,1]
+                             lat3d[1,0] = clats[i,0]
+                             lat3d[2,0] = lats[i]
+                        elif(math.isclose(abs(lats[i]-int_lat),0.25,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lat3d = np.zeros((3,1))
+                             lat3d[0,0] = clats[i,1]
+                             lat3d[1,0] = clats[i,0]
+                             lat3d[2,0] = lats[i]
                     # only take if dif_lat_up<100 and clue_y below
                     #dif_lat_up = dif_lat_up[abs(dif_lat_up)<500]
                     if(len(dif_lat_up)>=1):
@@ -483,6 +562,21 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                     dif_lat_down = dif_lat_down[idx]
                     lats = lats[idx]
                     clats = clats[idx,:]
+
+                    for i in range(len(lats)):
+                        int_lat = np.floor(lats[i])
+                        if(math.isclose(abs(lats[i]-int_lat),0.125,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lat3d = np.zeros((3,1))
+                             lat3d[0,0] = clats[i,1]
+                             lat3d[1,0] = clats[i,0]
+                             lat3d[2,0] = lats[i]
+                        elif(math.isclose(abs(lats[i]-int_lat),0.25,abs_tol=0.03) and done==False):
+                             done = True                   
+                             lat3d = np.zeros((3,1))
+                             lat3d[0,0] = clats[i,1]
+                             lat3d[1,0] = clats[i,0]
+                             lat3d[2,0] = lats[i]
                     # only take if dif_lat_down<100 and clue_y above
                     #dif_lat_down = dif_lat_down[abs(dif_lat_down)<500]
                     if(len(dif_lat_down)>=1 and done==False):
@@ -497,7 +591,14 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                                     print('New Lat3d Right ', lat3d)
                                     done=True
                     
-                    popty=poptx.copy() *  (dist_horz/dist_vert)
+                    if(done_lon==False):
+                        popty=poptx.copy() *  (dist_horz/dist_vert)
+                    elif(done_lon==True):
+                        if(good_delta_lon==0.5):
+                            popty=poptx.copy() #*  (dist_horz/dist_vert)
+                        else:
+                            popty=poptx.copy() *  (dist_horz/dist_vert)
+
                     popty[0] = -popty[0]
                     c = lat3d[2,0] - popty[0]*lat3d[0,0]
                     popty[1] = c
@@ -512,21 +613,6 @@ def main(lat3d,lon3d,training,img_shape,out_dir,image_path,image_dir,clue_x,clue
                         fity_help=False
                         fity_global=True                    
 
-                    """
-                    popty=poptx.copy()
-                    popty[0] = -popty[0]
-                    c = lat3d[2,0] - popty[0]*lat3d[0,0]
-                    popty[1] = c
-                    fity_help=True
-                    X = np.linspace(0,img_shape[0]-1,img_shape[0])
-                    Y = lin_line(X,*popty)         
-                    lat_min = Y[-1]
-                    lat_max = Y[0]
-                    print('lat max/min help = ',lat_max,lat_min)
-                    if(lat_max - lat_min > 3.5):
-                        fity_help=False
-                        fity_global=True
-                    """
                         
             if(fitx_own == False and fitx_help==False):
                 fitx_global = True
